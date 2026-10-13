@@ -116,7 +116,7 @@
         </label>
         <div id="filters" class="filters" aria-label="Категории"></div>
         <div id="catalog-list" class="catalog-list"></div>
-        <div class="note">Это первая тестовая версия каталога. Наличие, совместимость и стоимость каждого приложения подтверждает специалист перед оплатой. Ни пароли Apple Account, ни коды активации здесь не запрашиваются.</div>
+        <div class="note">Наличие, совместимость и стоимость приложений подтверждает специалист до оплаты. Пароли Apple Account и коды активации приложение не запрашивает.</div>
       </div>
       <div id="guide-page" class="page">
         <h2 class="page-title">Как проходит установка</h2>
@@ -132,7 +132,7 @@
       </div>
       <div id="orders-page" class="page">
         <h2 class="page-title">Мои заявки</h2>
-        <p class="page-sub">Пока заявки сохраняются только на этом устройстве. Для передачи в сервис используйте отправку из карточки заявки.</p>
+        <p class="page-sub">Ваши настоящие заявки из нашей базы. Для просмотра откройте мини-приложение внутри Telegram.</p>
         <div id="drafts"></div>
       </div>
       <div id="support-page" class="page">
@@ -168,9 +168,12 @@
         {id:"tbank",title:"Т-Банк",desc:"Банковское приложение",category:"Банки",symbol:"Т",tone:"gold"},
         {id:"other",title:"Другое приложение",desc:"Уточнить название и доступность",category:"Другое",symbol:"+",tone:"gray"}
       ];
+      var API_URL="https://cmcfwkfhyxfljpowbkpj.supabase.co/functions/v1/apps-orders";
       var filter="Все";
       var query="";
       var selected=[];
+      var pendingRequestKey=null;
+      var sending=false;
       var page="catalog";
       var drafts=[];
       try{drafts=JSON.parse(localStorage.getItem("ai-apps-drafts-v1")||"[]");if(!Array.isArray(drafts))drafts=[]}catch(e){drafts=[]}
@@ -178,7 +181,7 @@
       function activeNames(){return catalog.filter(function(x){return selected.indexOf(x.id)!==-1}).map(function(x){return x.title})}
       function escapeHtml(v){return String(v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
       function renderFilters(){
-        var cats=["Все","Банки","Другое"];
+        var cats=["Все"].concat(Array.from(new Set(catalog.map(function(x){return x.category}))));
         byId("filters").innerHTML=cats.map(function(v){return '<button type="button" class="chip'+(filter===v?' active':'')+'" data-filter="'+v+'">'+v+'</button>'}).join("");
         Array.from(document.querySelectorAll("[data-filter]")).forEach(function(el){el.onclick=function(){filter=el.getAttribute("data-filter");renderFilters();renderCatalog()}});
       }
@@ -188,47 +191,99 @@
           var on=selected.indexOf(x.id)!==-1;
           return '<article class="app-card'+(on?' selected':'')+'" data-app="'+x.id+'"><div class="app-icon '+x.tone+'">'+x.symbol+'</div><div class="app-info"><div class="app-title">'+x.title+'</div><div class="app-desc">'+x.desc+'</div><span class="app-tag">Доступность уточняется</span></div><button class="plus" aria-label="'+(on?'Убрать':'Добавить')+' '+x.title+'" type="button">'+(on?'✓':'+')+'</button></article>'
         }).join(""):'<div class="empty">По этому запросу приложений не найдено.</div>';
-        Array.from(document.querySelectorAll("[data-app]")).forEach(function(el){el.querySelector("button").onclick=function(){var id=el.getAttribute("data-app");selected=selected.indexOf(id)===-1?selected.concat([id]):selected.filter(function(x){return x!==id});renderCatalog();renderCart()}});
+        Array.from(document.querySelectorAll("[data-app]")).forEach(function(el){el.querySelector("button").onclick=function(){var id=el.getAttribute("data-app");selected=selected.indexOf(id)===-1?selected.concat([id]):selected.filter(function(x){return x!==id});pendingRequestKey=null;renderCatalog();renderCart()}});
       }
       function renderCart(){var el=byId("cart");el.hidden=page!=="catalog"||selected.length===0;byId("cart-count").textContent=selected.length}
       function showPage(name){
         page=name;
         Array.from(document.querySelectorAll(".page")).forEach(function(el){el.classList.toggle("visible",el.id===name+"-page")});
         Array.from(document.querySelectorAll("[data-page]")).forEach(function(el){el.classList.toggle("active",el.getAttribute("data-page")===name)});
-        if(name==="orders")renderDrafts();
+        if(name==="orders")renderOrders();
         renderCart();window.scrollTo(0,0);
       }
-      function saveDrafts(){try{localStorage.setItem("ai-apps-drafts-v1",JSON.stringify(drafts.slice(0,30)))}catch(e){}}
-      function orderText(d){
-        return "Здравствуйте! Хочу уточнить установку приложений через Apple Inside Apps.\nЗаявка: "+d.id+"\nПриложения:\n"+d.names.map(function(x){return "• "+x}).join("\n")+"\nСтоимость и наличие прошу подтвердить до оплаты.";
+      function activeSlugs(){return selected.slice()}
+      function getInitData(){return tg&&typeof tg.initData==="string"?tg.initData:""}
+      function friendlyError(code){
+        if(code==="BOT_TOKEN_NOT_CONFIGURED")return "Сервис заявок готовится к запуску. Повторите попытку позже.";
+        if(code==="INVALID_TELEGRAM_AUTH")return "Не удалось подтвердить вход. Закройте приложение и заново откройте его из Telegram.";
+        if(code==="RATE_LIMIT")return "Вы отправили слишком много заявок. Попробуйте через час.";
+        if(code==="UNKNOWN_APP")return "Состав каталога изменился. Перезапустите мини-приложение.";
+        return "Не удалось сохранить заявку. Повторите попытку позже.";
       }
-      function whatsappUrl(d){return "https://wa.me/79384322202?text="+encodeURIComponent(orderText(d))}
-      function telegramShareUrl(d){return "https://t.me/share/url?url="+encodeURIComponent("https://service-ai.ru")+"&text="+encodeURIComponent(orderText(d))}
+      async function callApi(payload){
+        var response=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+        var data=await response.json().catch(function(){return {}});
+        if(!response.ok||!data.ok){var e=new Error(friendlyError(data.error));e.code=data.error;throw e}
+        return data;
+      }
+      function formatDate(s){try{return new Date(s).toLocaleString("ru-RU")}catch(e){return s||""}}
+      function statusName(s){return ({new:"Новая заявка",awaiting_payment:"Ожидает оплаты",paid:"Оплачено",installing:"Установка",awaiting_activation:"Активация",completed:"Завершена",cancelled:"Отменена",refunded:"Возврат"})[s]||"В обработке"}
       function openSheet(d){
-        byId("sheet-title").textContent=d?"Заявка "+d.id:"Ваша заявка";
-        var names=d?d.names:activeNames();
+        byId("sheet-title").textContent=d?"Заявка "+String(d.id).slice(0,8).toUpperCase():"Ваша заявка";
+        var names=d?d.apps:activeNames();
         var items='<div class="summary">'+names.map(function(x){return '<div>✓ '+escapeHtml(x)+'</div>'}).join("")+'</div>';
-        var intro=d?"Черновик создан на этом устройстве. Отправьте его в сервис для подтверждения наличия и цены.":"Проверьте список. На этом этапе оплата не проводится: специалист сначала подтвердит наличие и стоимость.";
-        byId("sheet-content").innerHTML='<p>'+intro+'</p>'+items+(d?'<a class="primary" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener" href="'+whatsappUrl(d)+'">Отправить в сервис (WhatsApp)</a><button type="button" id="share-tg" class="secondary">Поделиться через Telegram</button><button type="button" id="copy-draft" class="secondary">Скопировать заявку</button>':'<button type="button" id="create-draft" class="primary">Сформировать заявку</button>');
+        var intro=d?"Заявка успешно сохранена в нашей базе. Наличие и стоимость подтвердим до оплаты.":"Проверьте список. На этом этапе оплата не проводится: специалист сначала подтвердит наличие и стоимость.";
+        byId("sheet-content").innerHTML='<p>'+intro+'</p>'+items+(d?
+          '<button type="button" id="view-orders" class="primary">Посмотреть мои заявки</button><button type="button" id="close-done" class="secondary">Закрыть</button>':
+          '<button type="button" id="create-order" class="primary">Отправить заявку</button><p style="font-size:11px;color:#748097">Заявка отправляется только после нажатия кнопки. Стоимость уточняется.</p>');
         byId("shade").classList.add("open");
         if(d){
-          byId("copy-draft").onclick=function(){copyText(orderText(d))};
-          byId("share-tg").onclick=function(){var u=telegramShareUrl(d);if(tg&&tg.openTelegramLink)tg.openTelegramLink(u);else window.open(u,"_blank","noopener")};
-        }else byId("create-draft").onclick=function(){
-          var fresh={id:"AI-"+Date.now().toString(36).toUpperCase(),names:activeNames(),created:new Date().toLocaleString("ru-RU")};
-          drafts.unshift(fresh);saveDrafts();selected=[];renderCatalog();renderCart();openSheet(fresh);
-        };
+          byId("view-orders").onclick=function(){byId("shade").classList.remove("open");showPage("orders")};
+          byId("close-done").onclick=function(){byId("shade").classList.remove("open")};
+        }else{
+          byId("create-order").onclick=sendOrder;
+        }
+      }
+      async function sendOrder(){
+        if(sending||!selected.length)return;
+        if(!getInitData()){toast("Откройте каталог из Telegram, а не браузера");return}
+        if(!window.crypto||!window.crypto.randomUUID){toast("Не удалось подготовить заявку. Обновите Telegram.");return}
+        var button=byId("create-order"); if(!button)return;
+        sending=true;button.disabled=true;button.textContent="Отправляем...";
+        if(!pendingRequestKey)pendingRequestKey=crypto.randomUUID();
+        try{
+          var reply=await callApi({action:"create_order",init_data:getInitData(),request_key:pendingRequestKey,app_slugs:activeSlugs()});
+          selected=[];pendingRequestKey=null;renderCatalog();renderCart();openSheet(reply.order);
+        }catch(e){
+          button.disabled=false;button.textContent="Повторить отправку";
+          toast(e.message||"Не удалось сохранить заявку");
+          var detail=byId("send-error");
+          if(!detail){detail=document.createElement("p");detail.id="send-error";detail.style.color="#bb3542";button.insertAdjacentElement("afterend",detail)}
+          detail.textContent=e.message||"Не удалось сохранить заявку";
+        }finally{sending=false}
+      }
+      async function loadCatalog(){
+        try{
+          var r=await fetch(API_URL,{method:"GET",cache:"no-store"});
+          var j=await r.json();
+          if(!r.ok||!j.ok||!Array.isArray(j.apps))return;
+          var old={};catalog.forEach(function(a){old[a.id]=a});
+          var next=j.apps.filter(function(a){return typeof a.slug==="string"&&typeof a.title==="string"&&typeof a.category==="string"})
+            .map(function(a){var o=old[a.slug]||{};return {id:a.slug,title:a.title,desc:a.description||o.desc||"По запросу",category:a.category,symbol:o.symbol||"●",tone:o.tone||"gray"}});
+          if(next.length){catalog=next;selected=selected.filter(function(s){return catalog.some(function(a){return a.id===s})});renderFilters();renderCatalog();renderCart()}
+        }catch(e){/* Use initial preview catalog while network is unavailable. */}
       }
       function toast(s){var el=byId("toast");el.textContent=s;el.style.display="block";clearTimeout(toast.timer);toast.timer=setTimeout(function(){el.style.display="none"},2300)}
       function copyText(s){
         if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(s).then(function(){toast("Текст заявки скопирован")}).catch(function(){toast("Не удалось скопировать: откройте заявку в Telegram")});
         else toast("Буфер обмена недоступен: отправьте через Telegram");
       }
-      function renderDrafts(){
+      async function renderOrders(){
         var el=byId("drafts");
-        if(!drafts.length){el.innerHTML='<div class="empty">Вы пока не создавали заявки.<br>Выберите приложения в каталоге.</div>';return}
-        el.innerHTML=drafts.map(function(d,i){return '<div class="draft-card"><div style="display:flex;align-items:center;justify-content:space-between"><b>'+escapeHtml(d.id)+'</b><span class="status">Не отправлена</span></div><p>'+d.names.map(escapeHtml).join(", ")+'</p><p>'+escapeHtml(d.created)+'</p><button type="button" data-draft="'+i+'" class="secondary" style="margin-top:12px">Открыть заявку →</button></div>'}).join("");
-        Array.from(document.querySelectorAll("[data-draft]")).forEach(function(el){el.onclick=function(){openSheet(drafts[Number(el.getAttribute("data-draft"))])}});
+        if(!getInitData()){el.innerHTML='<div class="empty">Откройте мини-приложение из бота @AppleInsideAppsBot, чтобы увидеть свои заказы.</div>';return}
+        el.innerHTML='<div class="empty">Загружаем ваши заявки...</div>';
+        try{
+          var result=await callApi({action:"my_orders",init_data:getInitData()});
+          var orders=result.orders||[];
+          if(!orders.length){el.innerHTML='<div class="empty">Пока нет отправленных заявок. Выберите приложение в каталоге.</div>';return}
+          el.innerHTML=orders.map(function(d){
+            var shortId=String(d.id).slice(0,8).toUpperCase();
+            return '<div class="draft-card"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><b>Заявка '+escapeHtml(shortId)+'</b><span class="status">'+escapeHtml(statusName(d.status))+'</span></div><p>'+d.apps.map(escapeHtml).join(", ")+'</p><p>'+escapeHtml(formatDate(d.created_at))+'</p></div>';
+          }).join("");
+        }catch(e){
+          el.innerHTML='<div class="empty">'+escapeHtml(e.message||"Не удалось загрузить заявки")+'<button class="secondary" id="retry-orders" type="button">Повторить</button></div>';
+          var b=byId("retry-orders");if(b)b.onclick=renderOrders;
+        }
       }
       byId("search").oninput=function(e){query=e.target.value.trim().toLowerCase();renderCatalog()};
       byId("hero-button").onclick=function(){byId("catalog-section").scrollIntoView({behavior:"smooth",block:"start"})};
@@ -237,7 +292,7 @@
       byId("shade").onclick=function(e){if(e.target===byId("shade"))byId("shade").classList.remove("open")};
       document.addEventListener("keydown",function(e){if(e.key==="Escape")byId("shade").classList.remove("open")});
       Array.from(document.querySelectorAll("[data-page]")).forEach(function(el){el.onclick=function(){showPage(el.getAttribute("data-page"))}});
-      renderFilters();renderCatalog();renderCart();renderDrafts();
+      renderFilters();renderCatalog();renderCart();loadCatalog();
     })();
   </script>
 </body>
