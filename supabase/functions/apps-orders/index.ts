@@ -121,8 +121,17 @@ async function db(path: string, init?: RequestInit) {
   if (!url) throw new Error("Project URL unavailable");
   const request = { ...(init || {}), headers: dbHeaders((init?.headers || {}) as Record<string, string>) };
   const res = await fetch(url + "/rest/v1/" + path, request);
-  if (!res.ok) throw new Error("Database operation failed: " + res.status);
-  return res.status === 204 ? null : await res.json();
+  // PostgREST 'Prefer: return=minimal' can respond with 201 and an empty body.
+  // Reading JSON unconditionally previously failed after an otherwise successful insert.
+  if (!res.ok) {
+    const errorText = (await res.text()).slice(0, 400);
+    console.error("Database operation failed", { status: res.status, error: errorText });
+    throw new Error("Database operation failed: " + res.status);
+  }
+  if (res.status === 204) return null;
+  const responseText = await res.text();
+  if (!responseText.trim()) return null;
+  return JSON.parse(responseText);
 }
 
 function responseOrder(row: any) {
