@@ -205,7 +205,7 @@
           '<p class="info-line">'+(app.paymentReady?
           'Цена и файл проверены. Оплата появится после подключения и тестирования платежей.':
           'Цена или файл приложения пока не проверены. Оплата отключена.')+'</p>'+
-          (app.priceRub!==null?'<div class="summary"><strong>Одно приложение: '+app.priceRub+' ₽</strong><div style="font-size:11px;color:#748097">Оплата через Telegram Stars будет доступна после настройки.</div></div>':'')+
+          (Number.isInteger(app.priceRub)?'<div class="summary"><strong>Одно приложение: '+app.priceRub+' ₽</strong><div style="font-size:11px;color:#748097">Оплата через Telegram Stars будет доступна после настройки.</div></div>':'')+
           '<button type="button" class="primary" id="detail-request">Запросить установку</button>'+
           '<button type="button" class="secondary" id="detail-guide">Подробнее об активации</button>';
         byId("shade").classList.add("open");
@@ -219,7 +219,7 @@
         var items=catalog.filter(function(x){return (filter==="Все"||filter===x.category)&&(!query||x.title.toLowerCase().indexOf(query)!==-1)});
         byId("catalog-list").innerHTML=items.length?items.map(function(x){
           var on=selected.indexOf(x.id)!==-1;
-          return '<article class="app-card'+(on?' selected':'')+'" data-app="'+x.id+'"><div class="app-icon '+x.tone+'">'+escapeHtml(x.symbol)+'</div><div class="app-info"><div class="app-title">'+escapeHtml(x.title)+'</div><div class="app-desc">'+escapeHtml(x.desc)+'</div><span class="app-tag">'+(x.priceRub!==null?x.priceRub+' ₽ за приложение':'Цена уточняется')+'</span></div><button class="plus" aria-label="'+(on?'Убрать':'Добавить')+' '+escapeHtml(x.title)+'" type="button">'+(on?'✓':'+')+'</button></article>'
+          return '<article class="app-card'+(on?' selected':'')+'" data-app="'+x.id+'"><div class="app-icon '+x.tone+'">'+escapeHtml(x.symbol)+'</div><div class="app-info"><div class="app-title">'+escapeHtml(x.title)+'</div><div class="app-desc">'+escapeHtml(x.desc)+'</div><span class="app-tag">'+(Number.isInteger(x.priceRub)?x.priceRub+' ₽ за приложение':'Цена уточняется')+'</span></div><button class="plus" aria-label="'+(on?'Убрать':'Добавить')+' '+escapeHtml(x.title)+'" type="button">'+(on?'✓':'+')+'</button></article>'
         }).join(""):'<div class="empty">По этому запросу приложений не найдено.</div>';
         Array.from(document.querySelectorAll("[data-app]")).forEach(function(el){
           el.onclick=function(){showAppDetails(el.getAttribute("data-app"))};
@@ -259,7 +259,7 @@
         var quote=null;
         if(!d&&selected.length===1){
           var chosen=catalog.find(function(x){return x.id===selected[0]});
-          if(chosen&&chosen.priceRub!==null)quote=chosen.priceRub;
+          if(chosen&&Number.isInteger(chosen.priceRub))quote=chosen.priceRub;
         }
         var quoteLine=d?'':(quote!==null?'<div class="summary"><strong>Базовая цена: '+quote+' ₽</strong><div style="font-size:11px;color:#748097">Оплата будет в Telegram Stars после активации платёжного сценария.</div></div>':(selected.length>1?'<div class="summary"><strong>Цена комплекта уточняется</strong><div style="font-size:11px;color:#748097">Для нескольких приложений будет отдельная пакетная цена.</div></div>':''));
         byId("sheet-content").innerHTML='<p>'+intro+'</p>'+flowSteps()+items+quoteLine+(d?
