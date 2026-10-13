@@ -181,12 +181,12 @@ Deno.serve(async (req: Request) => {
   try {
     if (req.method === "GET") {
       if (new URL(req.url).searchParams.get("health") === "1") return json({ ok: true, bot: await botHealth() });
-      const stored = await db("app_catalog?select=slug,title,category,description,is_available,price_stars,install_manifest_url,requires_activation&order=title.asc");
+      const stored = await db("app_catalog?select=slug,title,category,description,is_available,price_rub,price_stars,install_manifest_url,requires_activation&order=title.asc");
       // The manifest address is private until after server-verified payment.
       // "payment_ready" is false unless distribution AND price are configured.
       const apps = (stored || []).map((app: any) => ({
         slug: app.slug, title: app.title, category: app.category, description: app.description,
-        is_available: app.is_available, price_stars: app.price_stars,
+        is_available: app.is_available, price_rub: app.price_rub, price_stars: app.price_stars,
         requires_activation: app.requires_activation,
         payment_ready: Boolean(app.is_available && Number.isInteger(app.price_stars) &&
           app.price_stars > 0 && typeof app.install_manifest_url === "string" &&
@@ -220,21 +220,23 @@ Deno.serve(async (req: Request) => {
       "&created_at=gte." + encodeURIComponent(new Date(Date.now() - 3600_000).toISOString()) + "&limit=6");
     if (recent.length >= 5) return json({ error: "RATE_LIMIT" }, 429);
 
-    const catalog = await db("app_catalog?select=id,slug,title&slug=in.(" + (slugs as string[]).join(",") + ")");
+    const catalog = await db("app_catalog?select=id,slug,title,price_rub&slug=in.(" + (slugs as string[]).join(",") + ")");
     if (catalog.length !== slugs.length) return json({ error: "UNKNOWN_APP" }, 400);
     const titles = catalog.map((x: any) => x.title as string);
+    // Only a single-item RUB quote is currently configured; bundle quotes stay unset.
+    const totalRub = catalog.length === 1 && Number.isInteger(catalog[0].price_rub) ? catalog[0].price_rub : null;
 
     const created = await db("app_orders?select=id,status,created_at", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Prefer": "return=representation" },
-      body: JSON.stringify({ telegram_user_id: userId, status: "new", request_key: requestKey })
+      body: JSON.stringify({ telegram_user_id: userId, status: "new", request_key: requestKey, total_rub: totalRub })
     });
     const order = created?.[0];
     if (!order?.id) throw new Error("Missing saved order ID");
     try {
       await db("app_order_items", {
         method: "POST", headers: { "Content-Type": "application/json", "Prefer": "return=minimal" },
-        body: JSON.stringify(catalog.map((x: any) => ({ order_id: order.id, app_id: x.id })))
+        body: JSON.stringify(catalog.map((x: any) => ({ order_id: order.id, app_id: x.id, unit_price_rub: x.price_rub })))
       });
     } catch (e) {
       await db("app_orders?id=eq." + order.id, { method: "DELETE" }).catch(() => {});
