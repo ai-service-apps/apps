@@ -76,6 +76,13 @@
     .draft-card {background:#fff;border-radius:16px;padding:17px;margin-top:11px;border:1px solid var(--line)}
     .draft-card b {font-size:13px}.draft-card p {font-size:12px;color:var(--muted);margin:8px 0 0;line-height:1.5}
     .status {color:#a16b20;background:#fff5e4;font-size:10px;font-weight:750;padding:5px 8px;border-radius:7px}
+    .steps {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:17px 0}
+    .stage {border:1px solid #e4e9f4;background:#f8faff;border-radius:12px;padding:10px 8px;min-height:65px}
+    .stage-number {font-size:10px;color:#6780aa;font-weight:800}
+    .stage strong {font-size:11px;display:block;margin-top:5px;line-height:1.25}
+    .stage.current {background:#e9efff;border-color:#96aefe}
+    .info-line {color:#738098;font-size:12px;line-height:1.55;margin:12px 0}
+    .app-card .app-info {cursor:pointer}
     .shade {position:fixed;inset:0;background:rgba(12,18,35,.5);display:none;align-items:flex-end;z-index:30}
     .shade.open {display:flex}
     .sheet {width:100%;max-width:650px;margin:auto auto 0;background:#fff;border-radius:24px 24px 0 0;padding:24px 20px calc(24px + env(safe-area-inset-bottom));max-height:85vh;overflow:auto;box-shadow:0 -15px 60px rgba(0,0,0,.12)}
@@ -116,7 +123,7 @@
         </label>
         <div id="filters" class="filters" aria-label="Категории"></div>
         <div id="catalog-list" class="catalog-list"></div>
-        <div class="note">Наличие, совместимость и стоимость приложений подтверждает специалист до оплаты. Пароли Apple Account и коды активации приложение не запрашивает.</div>
+        <div class="note">Схема установки: выберите приложение → оплатите через Telegram → получите ссылку на установку → пройдите активацию через «Контент и покупки». Оплата появится только после проверки приложения; пока можно оставить заявку.</div>
       </div>
       <div id="guide-page" class="page">
         <h2 class="page-title">Как проходит установка</h2>
@@ -185,13 +192,39 @@
         byId("filters").innerHTML=cats.map(function(v){return '<button type="button" class="chip'+(filter===v?' active':'')+'" data-filter="'+escapeHtml(v)+'">'+escapeHtml(v)+'</button>'}).join("");
         Array.from(document.querySelectorAll("[data-filter]")).forEach(function(el){el.onclick=function(){filter=el.getAttribute("data-filter");renderFilters();renderCatalog()}});
       }
+      function flowSteps(){
+        return '<div class="steps">'+["Оплата","Установка","Активация"].map(function(t,i){
+          return '<div class="stage'+(i===0?" current":"")+'"><span class="stage-number">0'+(i+1)+'</span><strong>'+t+'</strong></div>';
+        }).join("")+'</div>';
+      }
+      function showAppDetails(id){
+        var app=catalog.find(function(x){return x.id===id});
+        if(!app)return;
+        byId("sheet-title").textContent=app.title;
+        byId("sheet-content").innerHTML='<p class="info-line">Удалённая установка на iPhone</p>'+flowSteps()+
+          '<p class="info-line">'+(app.paymentReady?
+          'Цена и файл проверены. Оплата появится после подключения и тестирования платежей.':
+          'Цена или файл приложения пока не проверены. Оплата отключена.')+'</p>'+
+          (app.priceStars?'<div class="summary"><strong>Цена: '+app.priceStars+' Telegram Stars</strong></div>':'')+
+          '<button type="button" class="primary" id="detail-request">Запросить установку</button>'+
+          '<button type="button" class="secondary" id="detail-guide">Подробнее об активации</button>';
+        byId("shade").classList.add("open");
+        byId("detail-request").onclick=function(){
+          if(selected.indexOf(id)===-1)selected=[id];
+          pendingRequestKey=null;renderCatalog();renderCart();openSheet(null);
+        };
+        byId("detail-guide").onclick=function(){byId("shade").classList.remove("open");showPage("guide")};
+      }
       function renderCatalog(){
         var items=catalog.filter(function(x){return (filter==="Все"||filter===x.category)&&(!query||x.title.toLowerCase().indexOf(query)!==-1)});
         byId("catalog-list").innerHTML=items.length?items.map(function(x){
           var on=selected.indexOf(x.id)!==-1;
-          return '<article class="app-card'+(on?' selected':'')+'" data-app="'+x.id+'"><div class="app-icon '+x.tone+'">'+escapeHtml(x.symbol)+'</div><div class="app-info"><div class="app-title">'+escapeHtml(x.title)+'</div><div class="app-desc">'+escapeHtml(x.desc)+'</div><span class="app-tag">Доступность уточняется</span></div><button class="plus" aria-label="'+(on?'Убрать':'Добавить')+' '+escapeHtml(x.title)+'" type="button">'+(on?'✓':'+')+'</button></article>'
+          return '<article class="app-card'+(on?' selected':'')+'" data-app="'+x.id+'"><div class="app-icon '+x.tone+'">'+escapeHtml(x.symbol)+'</div><div class="app-info"><div class="app-title">'+escapeHtml(x.title)+'</div><div class="app-desc">'+escapeHtml(x.desc)+'</div><span class="app-tag">'+(x.paymentReady?'Готов к подключению · '+x.priceStars+' Stars':'Установка по запросу')+'</span></div><button class="plus" aria-label="'+(on?'Убрать':'Добавить')+' '+escapeHtml(x.title)+'" type="button">'+(on?'✓':'+')+'</button></article>'
         }).join(""):'<div class="empty">По этому запросу приложений не найдено.</div>';
-        Array.from(document.querySelectorAll("[data-app]")).forEach(function(el){el.querySelector("button").onclick=function(){var id=el.getAttribute("data-app");selected=selected.indexOf(id)===-1?selected.concat([id]):selected.filter(function(x){return x!==id});pendingRequestKey=null;renderCatalog();renderCart()}});
+        Array.from(document.querySelectorAll("[data-app]")).forEach(function(el){
+          el.onclick=function(){showAppDetails(el.getAttribute("data-app"))};
+          el.querySelector("button").onclick=function(e){e.stopPropagation();var id=el.getAttribute("data-app");selected=selected.indexOf(id)===-1?selected.concat([id]):selected.filter(function(x){return x!==id});pendingRequestKey=null;renderCatalog();renderCart()};
+        });
       }
       function renderCart(){var el=byId("cart");el.hidden=page!=="catalog"||selected.length===0;byId("cart-count").textContent=selected.length}
       function showPage(name){
@@ -223,9 +256,9 @@
         var names=d?d.apps:activeNames();
         var items='<div class="summary">'+names.map(function(x){return '<div>✓ '+escapeHtml(x)+'</div>'}).join("")+'</div>';
         var intro=d?"Заявка успешно сохранена в нашей базе. Наличие и стоимость подтвердим до оплаты.":"Проверьте список. На этом этапе оплата не проводится: специалист сначала подтвердит наличие и стоимость.";
-        byId("sheet-content").innerHTML='<p>'+intro+'</p>'+items+(d?
+        byId("sheet-content").innerHTML='<p>'+intro+'</p>'+flowSteps()+items+(d?
           '<button type="button" id="view-orders" class="primary">Посмотреть мои заявки</button><button type="button" id="close-done" class="secondary">Закрыть</button>':
-          '<button type="button" id="create-order" class="primary">Отправить заявку</button><p style="font-size:11px;color:#748097">Заявка отправляется только после нажатия кнопки. Стоимость уточняется.</p>');
+          '<button type="button" id="create-order" class="primary">Запросить установку (без оплаты)</button><p style="font-size:11px;color:#748097">Заявка отправляется только после нажатия кнопки. Стоимость уточняется.</p>');
         byId("shade").classList.add("open");
         if(d){
           byId("view-orders").onclick=function(){byId("shade").classList.remove("open");showPage("orders")};
@@ -259,7 +292,7 @@
           if(!r.ok||!j.ok||!Array.isArray(j.apps))return;
           var old={};catalog.forEach(function(a){old[a.id]=a});
           var next=j.apps.filter(function(a){return typeof a.slug==="string"&&typeof a.title==="string"&&typeof a.category==="string"})
-            .map(function(a){var o=old[a.slug]||{};return {id:a.slug,title:a.title,desc:a.description||o.desc||"По запросу",category:a.category,symbol:o.symbol||"●",tone:o.tone||"gray"}});
+            .map(function(a){var o=old[a.slug]||{};return {id:a.slug,title:a.title,desc:a.description||o.desc||"По запросу",category:a.category,symbol:o.symbol||"●",tone:o.tone||"gray",priceStars:Number.isInteger(a.price_stars)?a.price_stars:null,paymentReady:a.payment_ready===true}});
           if(next.length){catalog=next;selected=selected.filter(function(s){return catalog.some(function(a){return a.id===s})});renderFilters();renderCatalog();renderCart()}
         }catch(e){/* Use initial preview catalog while network is unavailable. */}
       }
