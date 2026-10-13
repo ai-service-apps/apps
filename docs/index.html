@@ -205,7 +205,7 @@
           '<p class="info-line">'+(app.paymentReady?
           'Цена и файл проверены. Оплата появится после подключения и тестирования платежей.':
           'Цена или файл приложения пока не проверены. Оплата отключена.')+'</p>'+
-          (app.priceStars?'<div class="summary"><strong>Цена: '+app.priceStars+' Telegram Stars</strong></div>':'')+
+          (app.priceRub!==null?'<div class="summary"><strong>Одно приложение: '+app.priceRub+' ₽</strong><div style="font-size:11px;color:#748097">Оплата через Telegram Stars будет доступна после настройки.</div></div>':'')+
           '<button type="button" class="primary" id="detail-request">Запросить установку</button>'+
           '<button type="button" class="secondary" id="detail-guide">Подробнее об активации</button>';
         byId("shade").classList.add("open");
@@ -219,7 +219,7 @@
         var items=catalog.filter(function(x){return (filter==="Все"||filter===x.category)&&(!query||x.title.toLowerCase().indexOf(query)!==-1)});
         byId("catalog-list").innerHTML=items.length?items.map(function(x){
           var on=selected.indexOf(x.id)!==-1;
-          return '<article class="app-card'+(on?' selected':'')+'" data-app="'+x.id+'"><div class="app-icon '+x.tone+'">'+escapeHtml(x.symbol)+'</div><div class="app-info"><div class="app-title">'+escapeHtml(x.title)+'</div><div class="app-desc">'+escapeHtml(x.desc)+'</div><span class="app-tag">'+(x.paymentReady?'Готов к подключению · '+x.priceStars+' Stars':'Установка по запросу')+'</span></div><button class="plus" aria-label="'+(on?'Убрать':'Добавить')+' '+escapeHtml(x.title)+'" type="button">'+(on?'✓':'+')+'</button></article>'
+          return '<article class="app-card'+(on?' selected':'')+'" data-app="'+x.id+'"><div class="app-icon '+x.tone+'">'+escapeHtml(x.symbol)+'</div><div class="app-info"><div class="app-title">'+escapeHtml(x.title)+'</div><div class="app-desc">'+escapeHtml(x.desc)+'</div><span class="app-tag">'+(x.priceRub!==null?x.priceRub+' ₽ за приложение':'Цена уточняется')+'</span></div><button class="plus" aria-label="'+(on?'Убрать':'Добавить')+' '+escapeHtml(x.title)+'" type="button">'+(on?'✓':'+')+'</button></article>'
         }).join(""):'<div class="empty">По этому запросу приложений не найдено.</div>';
         Array.from(document.querySelectorAll("[data-app]")).forEach(function(el){
           el.onclick=function(){showAppDetails(el.getAttribute("data-app"))};
@@ -255,8 +255,14 @@
         byId("sheet-title").textContent=d?"Заявка "+String(d.id).slice(0,8).toUpperCase():"Ваша заявка";
         var names=d?d.apps:activeNames();
         var items='<div class="summary">'+names.map(function(x){return '<div>✓ '+escapeHtml(x)+'</div>'}).join("")+'</div>';
-        var intro=d?"Заявка успешно сохранена в нашей базе. Наличие и стоимость подтвердим до оплаты.":"Проверьте список. На этом этапе оплата не проводится: специалист сначала подтвердит наличие и стоимость.";
-        byId("sheet-content").innerHTML='<p>'+intro+'</p>'+flowSteps()+items+(d?
+        var intro=d?"Заявка успешно сохранена в нашей базе. Наличие и стоимость подтвердим до оплаты.":"Проверьте список. Оплата в Telegram будет доступна после проверки установки и подключения платежей.";
+        var quote=null;
+        if(!d&&selected.length===1){
+          var chosen=catalog.find(function(x){return x.id===selected[0]});
+          if(chosen&&chosen.priceRub!==null)quote=chosen.priceRub;
+        }
+        var quoteLine=d?'':(quote!==null?'<div class="summary"><strong>Базовая цена: '+quote+' ₽</strong><div style="font-size:11px;color:#748097">Оплата будет в Telegram Stars после активации платёжного сценария.</div></div>':(selected.length>1?'<div class="summary"><strong>Цена комплекта уточняется</strong><div style="font-size:11px;color:#748097">Для нескольких приложений будет отдельная пакетная цена.</div></div>':''));
+        byId("sheet-content").innerHTML='<p>'+intro+'</p>'+flowSteps()+items+quoteLine+(d?
           '<button type="button" id="view-orders" class="primary">Посмотреть мои заявки</button><button type="button" id="close-done" class="secondary">Закрыть</button>':
           '<button type="button" id="create-order" class="primary">Запросить установку (без оплаты)</button><p style="font-size:11px;color:#748097">Заявка отправляется только после нажатия кнопки. Стоимость уточняется.</p>');
         byId("shade").classList.add("open");
@@ -292,7 +298,7 @@
           if(!r.ok||!j.ok||!Array.isArray(j.apps))return;
           var old={};catalog.forEach(function(a){old[a.id]=a});
           var next=j.apps.filter(function(a){return typeof a.slug==="string"&&typeof a.title==="string"&&typeof a.category==="string"})
-            .map(function(a){var o=old[a.slug]||{};return {id:a.slug,title:a.title,desc:a.description||o.desc||"По запросу",category:a.category,symbol:o.symbol||"●",tone:o.tone||"gray",priceStars:Number.isInteger(a.price_stars)?a.price_stars:null,paymentReady:a.payment_ready===true}});
+            .map(function(a){var o=old[a.slug]||{};return {id:a.slug,title:a.title,desc:a.description||o.desc||"По запросу",category:a.category,symbol:o.symbol||"●",tone:o.tone||"gray",priceStars:Number.isInteger(a.price_stars)?a.price_stars:null,priceRub:Number.isInteger(a.price_rub)?a.price_rub:null,paymentReady:a.payment_ready===true}});
           if(next.length){catalog=next;selected=selected.filter(function(s){return catalog.some(function(a){return a.id===s})});renderFilters();renderCatalog();renderCart()}
         }catch(e){/* Use initial preview catalog while network is unavailable. */}
       }
