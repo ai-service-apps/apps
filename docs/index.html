@@ -123,7 +123,7 @@
         </label>
         <div id="filters" class="filters" aria-label="Категории"></div>
         <div id="catalog-list" class="catalog-list"></div>
-        <div class="note">Схема установки: выберите приложение → оплатите через Telegram → получите ссылку на установку → пройдите активацию через «Контент и покупки». Оплата появится только после проверки приложения; пока можно оставить заявку.</div>
+        <div class="note">Здесь можно выбрать приложение и отправить заявку на установку без оплаты. Сервис самостоятельной покупки через отдельный сайт готовится к запуску.</div>
       </div>
       <div id="guide-page" class="page">
         <h2 class="page-title">Как проходит установка</h2>
@@ -193,7 +193,7 @@
         Array.from(document.querySelectorAll("[data-filter]")).forEach(function(el){el.onclick=function(){filter=el.getAttribute("data-filter");renderFilters();renderCatalog()}});
       }
       function flowSteps(){
-        return '<div class="steps">'+["Оплата","Установка","Активация"].map(function(t,i){
+        return '<div class="steps">'+["Заявка","Установка","Активация"].map(function(t,i){
           return '<div class="stage'+(i===0?" current":"")+'"><span class="stage-number">0'+(i+1)+'</span><strong>'+t+'</strong></div>';
         }).join("")+'</div>';
       }
@@ -203,9 +203,9 @@
         byId("sheet-title").textContent=app.title;
         byId("sheet-content").innerHTML='<p class="info-line">Удалённая установка на iPhone</p>'+flowSteps()+
           '<p class="info-line">'+(app.paymentReady?
-          'Цена и файл проверены. Оплата появится после подключения и тестирования платежей.':
-          'Цена или файл приложения пока не проверены. Оплата отключена.')+'</p>'+
-          (Number.isInteger(app.priceRub)?'<div class="summary"><strong>Одно приложение: '+app.priceRub+' ₽</strong><div style="font-size:11px;color:#748097">Оплата через Telegram Stars будет доступна после настройки.</div></div>':'')+
+          'Проверяем возможность установки. Сейчас здесь можно оформить заявку без оплаты.':
+          'Наличие приложения уточняется. Здесь оформление заявки без оплаты.')+'</p>'+
+          (Number.isInteger(app.priceRub)?'<div class="summary"><strong>Одно приложение: '+app.priceRub+' ₽</strong><div style="font-size:11px;color:#748097">В мини-приложении оплата не принимается.</div></div>':'')+
           '<button type="button" class="primary" id="detail-request">Запросить установку</button>'+
           '<button type="button" class="secondary" id="detail-guide">Подробнее об активации</button>';
         byId("shade").classList.add("open");
@@ -255,13 +255,13 @@
         byId("sheet-title").textContent=d?"Заявка "+String(d.id).slice(0,8).toUpperCase():"Ваша заявка";
         var names=d?d.apps:activeNames();
         var items='<div class="summary">'+names.map(function(x){return '<div>✓ '+escapeHtml(x)+'</div>'}).join("")+'</div>';
-        var intro=d?"Заявка успешно сохранена в нашей базе. Наличие и стоимость подтвердим до оплаты.":"Проверьте список. Оплата в Telegram будет доступна после проверки установки и подключения платежей.";
+        var intro=d?"Заявка успешно сохранена в нашей базе. Мы подтвердим возможность установки.":"Проверьте список. Здесь можно оставить заявку без оплаты.";
         var quote=null;
         if(!d&&selected.length===1){
           var chosen=catalog.find(function(x){return x.id===selected[0]});
           if(chosen&&Number.isInteger(chosen.priceRub))quote=chosen.priceRub;
         }
-        var quoteLine=d?'':(quote!==null?'<div class="summary"><strong>Базовая цена: '+quote+' ₽</strong><div style="font-size:11px;color:#748097">Оплата будет в Telegram Stars после активации платёжного сценария.</div></div>':(selected.length>1?'<div class="summary"><strong>Цена комплекта уточняется</strong><div style="font-size:11px;color:#748097">Для нескольких приложений будет отдельная пакетная цена.</div></div>':''));
+        var quoteLine=d?'':(quote!==null?'<div class="summary"><strong>Базовая цена: '+quote+' ₽</strong><div style="font-size:11px;color:#748097">Это справочная цена. Оплата здесь не проводится.</div></div>':(selected.length>1?'<div class="summary"><strong>Цена комплекта уточняется</strong><div style="font-size:11px;color:#748097">Для нескольких приложений будет отдельная пакетная цена.</div></div>':''));
         byId("sheet-content").innerHTML='<p>'+intro+'</p>'+flowSteps()+items+quoteLine+(d?
           '<button type="button" id="view-orders" class="primary">Посмотреть мои заявки</button><button type="button" id="close-done" class="secondary">Закрыть</button>':
           '<button type="button" id="create-order" class="primary">Запросить установку (без оплаты)</button><p style="font-size:11px;color:#748097">Заявка отправляется только после нажатия кнопки. Стоимость уточняется.</p>');
