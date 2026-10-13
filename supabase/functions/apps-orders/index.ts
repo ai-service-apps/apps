@@ -36,27 +36,68 @@ function equalHex(a: string, b: string): boolean {
   return diff === 0;
 }
 
+async function botHealth() {
+  const token = Deno.env.get("TELEGRAM_BOT_TOKEN")?.trim();
+  if (!token) return { configured: false, valid: false, username: null, diagnostic: "MISSING_TOKEN" };
+  try {
+    const res = await fetch("https://api.telegram.org/bot" + token + "/getMe", {
+      method: "POST", signal: AbortSignal.timeout(6000)
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok || typeof data?.result?.username !== "string") {
+      return { configured: true, valid: false, username: null, diagnostic: "TELEGRAM_REJECTED_TOKEN" };
+    }
+    const username = data.result.username;
+    const matchesExpectedBot = username.toLowerCase() === "appleinsideappsbot";
+    return { configured: true, valid: matchesExpectedBot, username,
+      diagnostic: matchesExpectedBot ? "OK" : "WRONG_BOT_TOKEN" };
+  } catch (_) {
+    return { configured: true, valid: false, username: null, diagnostic: "TELEGRAM_UNREACHABLE" };
+  }
+}
+
 async function authenticate(initData: unknown): Promise<number | null> {
   const token = Deno.env.get("TELEGRAM_BOT_TOKEN")?.trim();
-  if (!token || typeof initData !== "string" || initData.length === 0 || initData.length > 8192) return null;
+  if (!token || typeof initData !== "string" || initData.length === 0 || initData.length > 8192) {
+    console.warn("Telegram auth rejected", { reason: "MISSING_TOKEN_OR_INITDATA" });
+    return null;
+  }
   const params = new URLSearchParams(initData);
   const hash = params.get("hash") || "";
   const authDate = Number(params.get("auth_date"));
   const now = Math.floor(Date.now() / 1000);
-  if (!Number.isSafeInteger(authDate) || authDate > now + 60 || now - authDate > 86400) return null;
+  if (!Number.isSafeInteger(authDate) || authDate > now + 60 || now - authDate > 86400) {
+    console.warn("Telegram auth rejected", { reason: "INVALID_AUTH_DATE" });
+    return null;
+  }
   const userRaw = params.get("user");
-  if (!userRaw) return null;
-  // Telegram 8.0+ can include an Ed25519 `signature`; omit both signature and hash
-  // from the bot-token HMAC data-check string.
-  const dataCheck = Array.from(params.entries())
-    .filter(([key]) => key !== "hash" && key !== "signature")
+  if (!userRaw) {
+    console.warn("Telegram auth rejected", { reason: "MISSING_USER" });
+    return null;
+  }
+  if (new Set(Array.from(params.keys())).size !== Array.from(params.keys()).length) {
+    console.warn("Telegram auth rejected", { reason: "DUPLICATE_INITDATA_KEYS" });
+    return null;
+  }
+  // Official bot-token verification includes every received key EXCEPT "hash".
+  // Third-party Ed25519 verification is a DIFFERENT flow and excludes signature too.
+  const entries = Array.from(params.entries());
+  const dataCheck = entries.filter(([key]) => key !== "hash")
     .map(([key, value]) => key + "=" + value)
     .sort()
     .join("\n");
   const secret = await hmac(encoder.encode("WebAppData"), token);
   const computed = hex(await hmac(secret, dataCheck));
   if (!equalHex(computed, hash.toLowerCase())) {
-    console.warn("Telegram auth rejected: hmac mismatch", { hasSignature: params.has("signature") });
+    // Diagnostic comparison: do not accept this alternate form for authentication.
+    const withoutSignature = entries.filter(([key]) => key !== "hash" && key !== "signature")
+      .map(([key, value]) => key + "=" + value).sort().join("\n");
+    const alternateHash = hex(await hmac(secret, withoutSignature));
+    console.warn("Telegram auth rejected", {
+      reason: "HMAC_MISMATCH",
+      hasSignature: params.has("signature"),
+      signatureExcludedWouldPass: equalHex(alternateHash, hash.toLowerCase())
+    });
     return null;
   }
   try {
@@ -64,6 +105,7 @@ async function authenticate(initData: unknown): Promise<number | null> {
     const id = Number(u.id);
     return Number.isSafeInteger(id) && id > 0 ? id : null;
   } catch (_) {
+    console.warn("Telegram auth rejected", { reason: "INVALID_USER_JSON" });
     return null;
   }
 }
@@ -129,6 +171,7 @@ Deno.serve(async (req: Request) => {
   if (origin && origin !== ALLOWED_ORIGIN) return json({ error: "ORIGIN_NOT_ALLOWED" }, 403);
   try {
     if (req.method === "GET") {
+      if (new URL(req.url).searchParams.get("health") === "1") return json({ ok: true, bot: await botHealth() });
       const apps = await db("app_catalog?select=slug,title,category,description,is_available&order=title.asc");
       return json({ ok: true, apps, configured: Boolean(Deno.env.get("TELEGRAM_BOT_TOKEN")) });
     }
