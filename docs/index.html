@@ -182,14 +182,14 @@
       function escapeHtml(v){return String(v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
       function renderFilters(){
         var cats=["Все"].concat(Array.from(new Set(catalog.map(function(x){return x.category}))));
-        byId("filters").innerHTML=cats.map(function(v){return '<button type="button" class="chip'+(filter===v?' active':'')+'" data-filter="'+v+'">'+v+'</button>'}).join("");
+        byId("filters").innerHTML=cats.map(function(v){return '<button type="button" class="chip'+(filter===v?' active':'')+'" data-filter="'+escapeHtml(v)+'">'+escapeHtml(v)+'</button>'}).join("");
         Array.from(document.querySelectorAll("[data-filter]")).forEach(function(el){el.onclick=function(){filter=el.getAttribute("data-filter");renderFilters();renderCatalog()}});
       }
       function renderCatalog(){
         var items=catalog.filter(function(x){return (filter==="Все"||filter===x.category)&&(!query||x.title.toLowerCase().indexOf(query)!==-1)});
         byId("catalog-list").innerHTML=items.length?items.map(function(x){
           var on=selected.indexOf(x.id)!==-1;
-          return '<article class="app-card'+(on?' selected':'')+'" data-app="'+x.id+'"><div class="app-icon '+x.tone+'">'+x.symbol+'</div><div class="app-info"><div class="app-title">'+x.title+'</div><div class="app-desc">'+x.desc+'</div><span class="app-tag">Доступность уточняется</span></div><button class="plus" aria-label="'+(on?'Убрать':'Добавить')+' '+x.title+'" type="button">'+(on?'✓':'+')+'</button></article>'
+          return '<article class="app-card'+(on?' selected':'')+'" data-app="'+x.id+'"><div class="app-icon '+x.tone+'">'+escapeHtml(x.symbol)+'</div><div class="app-info"><div class="app-title">'+escapeHtml(x.title)+'</div><div class="app-desc">'+escapeHtml(x.desc)+'</div><span class="app-tag">Доступность уточняется</span></div><button class="plus" aria-label="'+(on?'Убрать':'Добавить')+' '+escapeHtml(x.title)+'" type="button">'+(on?'✓':'+')+'</button></article>'
         }).join(""):'<div class="empty">По этому запросу приложений не найдено.</div>';
         Array.from(document.querySelectorAll("[data-app]")).forEach(function(el){el.querySelector("button").onclick=function(){var id=el.getAttribute("data-app");selected=selected.indexOf(id)===-1?selected.concat([id]):selected.filter(function(x){return x!==id});pendingRequestKey=null;renderCatalog();renderCart()}});
       }
