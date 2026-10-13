@@ -37,7 +37,7 @@ function equalHex(a: string, b: string): boolean {
 }
 
 async function authenticate(initData: unknown): Promise<number | null> {
-  const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  const token = Deno.env.get("TELEGRAM_BOT_TOKEN")?.trim();
   if (!token || typeof initData !== "string" || initData.length === 0 || initData.length > 8192) return null;
   const params = new URLSearchParams(initData);
   const hash = params.get("hash") || "";
@@ -46,13 +46,19 @@ async function authenticate(initData: unknown): Promise<number | null> {
   if (!Number.isSafeInteger(authDate) || authDate > now + 60 || now - authDate > 86400) return null;
   const userRaw = params.get("user");
   if (!userRaw) return null;
-  // The hash is excluded; Telegram's signature field is included when present.
-  const dataCheck = Array.from(params.entries()).filter(([key]) => key !== "hash")
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => key + "=" + value).join("\n");
+  // Telegram 8.0+ can include an Ed25519 `signature`; omit both signature and hash
+  // from the bot-token HMAC data-check string.
+  const dataCheck = Array.from(params.entries())
+    .filter(([key]) => key !== "hash" && key !== "signature")
+    .map(([key, value]) => key + "=" + value)
+    .sort()
+    .join("\n");
   const secret = await hmac(encoder.encode("WebAppData"), token);
   const computed = hex(await hmac(secret, dataCheck));
-  if (!equalHex(computed, hash.toLowerCase())) return null;
+  if (!equalHex(computed, hash.toLowerCase())) {
+    console.warn("Telegram auth rejected: hmac mismatch", { hasSignature: params.has("signature") });
+    return null;
+  }
   try {
     const u = JSON.parse(userRaw);
     const id = Number(u.id);
