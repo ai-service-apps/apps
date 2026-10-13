@@ -181,7 +181,17 @@ Deno.serve(async (req: Request) => {
   try {
     if (req.method === "GET") {
       if (new URL(req.url).searchParams.get("health") === "1") return json({ ok: true, bot: await botHealth() });
-      const apps = await db("app_catalog?select=slug,title,category,description,is_available&order=title.asc");
+      const stored = await db("app_catalog?select=slug,title,category,description,is_available,price_stars,install_manifest_url,requires_activation&order=title.asc");
+      // The manifest address is private until after server-verified payment.
+      // "payment_ready" is false unless distribution AND price are configured.
+      const apps = (stored || []).map((app: any) => ({
+        slug: app.slug, title: app.title, category: app.category, description: app.description,
+        is_available: app.is_available, price_stars: app.price_stars,
+        requires_activation: app.requires_activation,
+        payment_ready: Boolean(app.is_available && Number.isInteger(app.price_stars) &&
+          app.price_stars > 0 && typeof app.install_manifest_url === "string" &&
+          app.install_manifest_url.startsWith("https://"))
+      }));
       return json({ ok: true, apps, configured: Boolean(Deno.env.get("TELEGRAM_BOT_TOKEN")) });
     }
     const body = await req.json().catch(() => null);
