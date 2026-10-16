@@ -68,6 +68,21 @@ h2{font-size:22px;letter-spacing:-.6px;margin:0 0 7px}
 footer{margin-top:29px;padding-top:17px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);display:flex;gap:17px;justify-content:space-between;line-height:1.7}
 footer a{color:#5371ac;text-decoration:none}
 @media(max-width:650px){.wrap{padding:0 14px 70px}.hero{padding:24px 20px}.grid{grid-template-columns:1fr}.progress{gap:5px}.progress div{padding:9px 6px}.progress strong{font-size:10px}.progress span{font-size:9px}.actions{flex-direction:column}.actions button{width:100%}.order-demo{padding:19px}footer{flex-direction:column;gap:8px}}
+
+.demo-steps{display:grid;gap:10px;margin:14px 0 20px}
+.demo-item{border:1px solid var(--line);background:#f9fbff;border-radius:14px;padding:14px 15px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.demo-item strong{display:block;font-size:14px}
+.demo-item small{display:block;color:var(--muted);margin-top:5px;font-size:12px}
+.demo-item.ready{border-color:#bce5cb;background:#f2fbf5}
+.demo-item button{border:1px solid #cad7ec;border-radius:10px;background:#fff;padding:10px 12px;color:#274f9e;font-size:12px;font-weight:750}
+.demo-item button.complete{color:#1c7e50;background:#eaf7ef;border-color:#b9ddc9}
+.demo-footer{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin:14px 0}
+.demo-footer .primary{flex:1}
+.demo-label{display:block;font-weight:750;font-size:13px;margin-bottom:10px}
+.demo-check{display:flex;gap:10px;align-items:flex-start;background:#f7f9fd;border:1px solid var(--line);border-radius:11px;padding:13px;margin-top:15px;font-size:12px;line-height:1.55;color:#536584}
+.demo-check input{margin-top:3px;width:17px;height:17px;flex:none}
+.finish-symbol{height:64px;width:64px;border-radius:50%;display:grid;place-items:center;margin:12px 0 16px;background:#e6f7ed;color:#16864a;font-size:34px;font-weight:800}
+@media(max-width:650px){.demo-item button{width:100%}.demo-footer{flex-direction:column}.demo-footer button{width:100%}}
 </style>
 </head>
 <body>
@@ -80,7 +95,7 @@ footer a{color:#5371ac;text-decoration:none}
 <section class="hero">
 <div class="eyebrow">Приложения на iPhone</div>
 <h1>Выбрать. Оплатить. Установить.</h1>
-<p>Всё в одном процессе, без переписки с менеджером: выберите приложения, оплатите и следуйте шагам установки и активации.</p>
+<p>Выберите приложения и проверьте процесс установки и активации без переписки с менеджером. Пока оплата не подключена, доступна демонстрация без списаний.</p>
 </section>
 <div class="progress" aria-label="Этапы покупки">
 <div class="on"><span>01</span><strong>Выбор</strong></div>
@@ -98,42 +113,57 @@ footer a{color:#5371ac;text-decoration:none}
 <div class="summary-row"><span>Итого</span><strong id="total">0 ₽</strong></div>
 <div class="actions">
 <button id="pay" class="primary" disabled>Оплатить</button>
-<button id="preview" class="secondary" type="button">Посмотреть этапы после оплаты</button>
+<button id="preview" class="secondary" type="button" disabled>Протестировать установку и активацию</button>
 </div>
 <div class="notice warn" id="payment-warning">Приём оплаты временно отключён. Переход к установке откроется только после подтверждения настоящего платежа. Сейчас доступен безопасный предпросмотр.</div>
 </div>
 </section>
 </div>
-<div id="postpayment" class="preview" aria-label="Предпросмотр шагов после оплаты">
-<div class="progress" id="preview-progress">
+<div id="postpayment" class="preview" aria-label="Демонстрация шагов после оплаты">
+<div class="progress" id="preview-progress" aria-label="Шаги установки">
 <div class="done"><span>01</span><strong>Выбор</strong></div>
 <div class="done"><span>02</span><strong>Оплата</strong></div>
 <div class="on"><span>03</span><strong>Скачать</strong></div>
 <div><span>04</span><strong>Активация</strong></div>
 </div>
 <div class="order-demo">
-<span class="label">ДЕМОНСТРАЦИЯ · БЕЗ СПИСАНИЯ ДЕНЕГ</span>
-<div id="download-stage">
-<h2>Скачать приложения</h2>
-<p class="sub">После подтверждения реальной оплаты здесь автоматически появятся кнопки установки выбранных приложений.</p>
-<div id="download-list"></div>
-<button class="primary" type="button" disabled style="margin-top:15px;width:100%">Установить на iPhone · после оплаты</button>
-<div class="notice">Ссылки не выдаются по факту открытия этой страницы. Сначала сервер должен подтвердить действующий платёж и право на установку.</div>
-<div class="actions"><button type="button" id="next-stage" class="secondary">Посмотреть этап активации →</button></div>
+<span class="label">ДЕМОНСТРАЦИЯ · ДЕНЬГИ НЕ СПИСЫВАЮТСЯ</span>
+<section id="download-stage">
+<h2 style="margin-top:15px">Установка приложений</h2>
+<p class="sub">Здесь после реальной оплаты появятся кнопки «Установить». Пока можно проверить последовательность шагов, отметив приложения как установленные в демонстрации.</p>
+<div id="download-list" class="demo-steps" aria-live="polite"></div>
+<div class="notice">В демонстрации установочные файлы не выдаются. После подключения оплаты ссылку для каждого приложения будет открывать сервер только по подтверждённому заказу.</div>
+<div class="demo-footer">
+<button type="button" id="next-stage" class="primary" disabled>Продолжить к активации →</button>
 </div>
-<div id="activation-stage" hidden>
-<h2>Активация приложения</h2>
-<p class="sub">После установки следуйте инструкции для выбранного приложения.</p>
-<div class="account-box"><strong>Apple Account для «Контент и покупки»</strong>
-<p>Данные для активации доступны только после подтверждения заказа и разрешённого способа установки. В демонстрации они не выдаются. Вход и коды подтверждения выполняются непосредственно на устройстве.</p></div>
-<p class="manual"><strong>1.</strong> Откройте «Настройки» на iPhone.<br>
-<strong>2.</strong> Нажмите на своё имя → «Контент и покупки».<br>
-<strong>3.</strong> При необходимости выполните вход в учётную запись, использование которой вам разрешено.<br>
-<strong>4.</strong> Подтвердите вход на доверенном устройстве. Не передавайте пароль или код третьим лицам.<br>
-<strong>5.</strong> Откройте установленное приложение и проверьте работу.</p>
-<div class="notice">Невозможно автоматически ввести Apple Account и код двухфакторной проверки на iPhone через обычный веб-сайт. Этот этап требует действий владельца устройства.</div>
-<div class="actions"><button class="secondary" type="button" id="back-stage">← Назад к установке</button></div>
+</section>
+<section id="activation-stage" hidden>
+<h2 style="margin-top:15px">Активация приложений</h2>
+<p class="sub">После установки проверьте, требуется ли активация выбранных приложений.</p>
+<div id="activate-names" class="summary-items"></div>
+<div class="account-box"><strong>«Контент и покупки» на iPhone</strong>
+<p>Откройте «Настройки» → ваше имя → «Контент и покупки». При необходимости выполните вход в учётную запись, использовать которую у вас есть разрешение. Для этого нужны действия на самом iPhone.</p></div>
+<p class="manual">
+<strong>1.</strong> Откройте «Настройки» на iPhone.<br>
+<strong>2.</strong> Нажмите на ваше имя → «Контент и покупки».<br>
+<strong>3.</strong> При необходимости войдите в разрешённый вам Apple Account.<br>
+<strong>4.</strong> Подтвердите вход на доверенном устройстве и проверьте запуск приложений.
+</p>
+<div class="notice">Пароли и коды двухфакторного подтверждения не следует передавать через сайт или чат. Сервис пока не выдаёт данные учётных записей. Используйте только разрешённые способы установки.</div>
+<label class="demo-check"><input id="activation-checked" type="checkbox"><span>В демонстрации считаем, что все приложения установлены, активированы и успешно открываются на iPhone.</span></label>
+<div class="demo-footer">
+<button class="secondary" type="button" id="back-stage">← К установке</button>
+<button class="primary" type="button" id="finish-demo" disabled>Завершить демонстрацию</button>
 </div>
+</section>
+<section id="finish-stage" hidden>
+<div class="finish-symbol" aria-hidden="true">✓</div>
+<h2>Сценарий проверен</h2>
+<p class="sub">Вы прошли тестовый путь: выбор приложений → установка → активация → завершение.</p>
+<div id="finish-list" class="demo-steps"></div>
+<div class="notice">Демонстрация не означает, что установка или оплата действительно выполнены. Реальная выдача появится только после настройки платежей и проверки права на распространение приложения.</div>
+<div class="demo-footer"><button type="button" id="restart-demo" class="secondary">Пройти ещё раз</button></div>
+</section>
 <div class="actions"><button class="secondary" type="button" id="back-shop">Вернуться в каталог</button></div>
 </div>
 </div>
@@ -148,75 +178,116 @@ footer a{color:#5371ac;text-decoration:none}
 const api="https://cmcfwkfhyxfljpowbkpj.supabase.co/functions/v1/apps-orders";
 const catalogEl=document.getElementById("catalog");
 const selections=new Set();
-const esc=value=>String(value).replace(/[&<>"']/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[x]));
+const simulatedInstalled=new Set();
+const esc=v=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const icons={sber:"С",alfa:"А",tbank:"Т"};
-let catalog=[];
-let stage="download";
-function money(n){return n.toLocaleString("ru-RU")+" ₽"}
-function nouns(n){return n===1?"приложение":n>=2&&n<=4?"приложения":"приложений"}
-function chosen(){return catalog.filter(a=>selections.has(a.slug))}
-function draw(){
-  catalogEl.innerHTML=catalog.length?catalog.map(app=>{
-    const picked=selections.has(app.slug),price=app.price_rub;
-    const ready=Number.isInteger(price)&&price>0;
-    return '<button type="button" class="app-card'+(picked?' selected':'')+'" data-select="'+esc(app.slug)+'" aria-pressed="'+picked+'">'+
-    '<span class="symbol '+esc(app.slug)+'">'+esc(icons[app.slug]||"•")+'</span>'+
-    '<span class="details"><strong>'+esc(app.title)+'</strong><small>'+esc(app.description||"Для iPhone")+'</small>'+
-    '<b>'+(ready?money(price):"Стоимость уточняется")+'</b></span><span class="check">'+(picked?"✓":"+")+'</span></button>';
-  }).join(""):'<div class="empty">Приложения временно недоступны. Повторите попытку позже.</div>';
+let catalog=[],flow="download";
+const el=id=>document.getElementById(id);
+const money=n=>n.toLocaleString("ru-RU")+" ₽";
+const nouns=n=>n===1?"приложение":n>=2&&n<=4?"приложения":"приложений";
+const chosen=()=>catalog.filter(a=>selections.has(a.slug));
+function renderCatalog(){
+  catalogEl.innerHTML=catalog.length?catalog.map(a=>{
+    const picked=selections.has(a.slug),price=a.price_rub,hasPrice=Number.isInteger(price)&&price>0;
+    return '<button type="button" class="app-card'+(picked?' selected':'')+'" data-select="'+esc(a.slug)+'" aria-pressed="'+picked+'">'+
+    '<span class="symbol '+esc(a.slug)+'">'+esc(icons[a.slug]||"•")+'</span>'+
+    '<span class="details"><strong>'+esc(a.title)+'</strong><small>'+esc(a.description||"Для iPhone")+'</small>'+
+    '<b>'+(hasPrice?money(price):"Стоимость уточняется")+'</b></span><span class="check">'+(picked?"✓":"+")+'</span></button>';
+  }).join(""):'<div class="empty">Каталог временно недоступен. Повторите попытку позже.</div>';
   Array.from(catalogEl.querySelectorAll("[data-select]")).forEach(b=>{
     b.onclick=()=>{
       const slug=b.getAttribute("data-select");
       if(selections.has(slug))selections.delete(slug);else selections.add(slug);
-      draw();
+      renderCatalog();
     };
   });
-  const picked=chosen(),total=picked.reduce((n,a)=>n+(Number.isInteger(a.price_rub)?a.price_rub:0),0);
-  document.getElementById("count").textContent=picked.length+" "+nouns(picked.length);
-  document.getElementById("selection").textContent=picked.length?picked.map(a=>a.title).join(", "):"Пока ничего не выбрано";
-  document.getElementById("total").textContent=picked.length?money(total):"0 ₽";
-  const pay=document.getElementById("pay");
-  pay.textContent=picked.length?"Оплатить "+money(total):"Выберите приложение";
-  pay.disabled=true; // Payment provider intentionally NOT connected; no automatic unlock.
+  const selected=chosen();
+  const total=selected.reduce((n,a)=>n+(Number.isInteger(a.price_rub)?a.price_rub:0),0);
+  el("count").textContent=selected.length+" "+nouns(selected.length);
+  el("selection").textContent=selected.length?selected.map(a=>a.title).join(", "):"Пока ничего не выбрано";
+  el("total").textContent=selected.length?money(total):"0 ₽";
+  const pay=el("pay");pay.disabled=true;pay.textContent=selected.length?"Оплатить "+money(total):"Выберите приложение";
+  el("preview").disabled=selected.length===0;
 }
-function changeStage(next){
-  stage=next;
-  document.getElementById("download-stage").hidden=next!=="download";
-  document.getElementById("activation-stage").hidden=next!=="activation";
-  const cells=Array.from(document.querySelectorAll("#preview-progress > div"));
-  cells.forEach((el,i)=>{el.className=i<(next==="download"?2:3)?"done":i===(next==="download"?2:3)?"on":""});
+function renderProgress(){
+  const active=flow==="download"?2:flow==="activation"?3:4;
+  Array.from(el("preview-progress").children).forEach((node,i)=>{
+    node.className=i<active?"done":i===active?"on":"";
+  });
+}
+function setFlow(phase){
+  flow=phase;
+  el("download-stage").hidden=phase!=="download";
+  el("activation-stage").hidden=phase!=="activation";
+  el("finish-stage").hidden=phase!=="finish";
+  renderProgress();
+  if(phase==="download")renderDownload();
+  if(phase==="activation"){
+    el("activate-names").textContent="Выбрано: "+chosen().map(x=>x.title).join(", ");
+    el("activation-checked").checked=false;
+    el("finish-demo").disabled=true;
+  }
+  if(phase==="finish")renderFinish();
   window.scrollTo({top:0,behavior:"smooth"});
 }
-document.getElementById("preview").onclick=()=>{
+function renderDownload(){
   const items=chosen();
-  document.getElementById("download-list").innerHTML=items.length?items.map(a=>
-    '<div class="download-card"><div class="download-icon">↓</div><div><strong>'+esc(a.title)+'</strong><small>Установка будет доступна после подтверждения оплаты и проверки файла</small></div></div>'
-  ).join(""):'<div class="empty">Сначала выберите приложение в каталоге, чтобы увидеть его на экране установки.</div>';
-  document.getElementById("store").className="store hidden";
-  document.getElementById("postpayment").className="preview visible";
-  changeStage("download");
+  el("download-list").innerHTML=items.map(a=>{
+    const done=simulatedInstalled.has(a.slug);
+    return '<div class="demo-item'+(done?" ready":"")+'"><div>'+
+      '<strong>'+esc(a.title)+'</strong>'+
+      '<small>'+(done?"Шаг отмечен выполненным в демонстрации":"Файл не выдаётся: оплата и проверка ещё не подключены")+'</small></div>'+
+      '<button type="button" data-installed="'+esc(a.slug)+'" class="'+(done?"complete":"")+'">'+
+      (done?"✓ Отмечено":"Отметить как установленное (демо)")+'</button></div>';
+  }).join("");
+  Array.from(el("download-list").querySelectorAll("[data-installed]")).forEach(b=>{
+    b.onclick=()=>{
+      const slug=b.getAttribute("data-installed");
+      if(simulatedInstalled.has(slug))simulatedInstalled.delete(slug);
+      else simulatedInstalled.add(slug);
+      renderDownload();
+    };
+  });
+  const count=items.filter(a=>simulatedInstalled.has(a.slug)).length;
+  el("next-stage").disabled=!items.length||count!==items.length;
+  el("next-stage").textContent=count===items.length?"Продолжить к активации →":"Установка (демо): "+count+" из "+items.length;
+}
+function renderFinish(){
+  el("finish-list").innerHTML=chosen().map(a=>
+    '<div class="demo-item ready"><strong>'+esc(a.title)+'</strong><span style="color:#228758;font-size:12px;font-weight:700">✓ В демо выполнено</span></div>'
+  ).join("");
+}
+el("preview").onclick=()=>{
+  if(!chosen().length)return;
+  simulatedInstalled.clear();
+  el("store").className="store hidden";
+  el("postpayment").className="preview visible";
+  setFlow("download");
 };
-document.getElementById("next-stage").onclick=()=>changeStage("activation");
-document.getElementById("back-stage").onclick=()=>changeStage("download");
-document.getElementById("back-shop").onclick=()=>{
-  document.getElementById("postpayment").className="preview";
-  document.getElementById("store").className="store visible";
+el("next-stage").onclick=()=>{if(!el("next-stage").disabled)setFlow("activation")};
+el("back-stage").onclick=()=>setFlow("download");
+el("activation-checked").onchange=()=>{el("finish-demo").disabled=!el("activation-checked").checked};
+el("finish-demo").onclick=()=>{if(el("activation-checked").checked)setFlow("finish")};
+el("restart-demo").onclick=()=>{simulatedInstalled.clear();setFlow("download")};
+el("back-shop").onclick=()=>{
+  el("postpayment").className="preview";
+  el("store").className="store visible";
   window.scrollTo({top:0,behavior:"smooth"});
 };
 async function load(){
   try{
     const r=await fetch(api,{cache:"no-store"});
-    if(!r.ok)throw Error("Каталог временно недоступен");
+    if(!r.ok)throw Error("CATALOG_UNAVAILABLE");
     const j=await r.json();
-    if(!j.ok||!Array.isArray(j.apps))throw Error("Каталог временно недоступен");
+    if(!j.ok||!Array.isArray(j.apps))throw Error("CATALOG_UNAVAILABLE");
     catalog=j.apps.filter(a=>a.slug!=="other"&&typeof a.slug==="string"&&typeof a.title==="string");
-  }catch(e){
+  }catch(_){
     catalog=[];
-    document.getElementById("payment-warning").textContent="Каталог сейчас не загружается. Оплата отключена. Вернитесь позже.";
+    el("payment-warning").textContent="Не удалось загрузить каталог. Оплата отключена. Повторите попытку позже.";
   }
-  draw();
+  renderCatalog();
 }
-draw();
+renderCatalog();
 load();
 })();
 </script>
