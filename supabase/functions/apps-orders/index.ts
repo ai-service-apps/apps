@@ -136,18 +136,71 @@ async function db(path: string, init?: RequestInit) {
 
 function responseOrder(row: any) {
   const items = Array.isArray(row.app_order_items) ? row.app_order_items : [];
+  const activities = Array.isArray(row.app_order_actions) ? row.app_order_actions : [];
+  // Installation rights are gated by a technician-controlled order state AND
+  // availability review. Never expose manifest URLs to public catalog requests.
+  const canInstall = row.status === "installing" || row.status === "awaiting_activation";
+  const installations: Array<{ title: string; url: string }> = [];
+  if (canInstall) for (const item of items) {
+    const app = item?.app_catalog;
+    if (!app?.is_available || typeof app.install_manifest_url !== "string") continue;
+    try {
+      const u = new URL(app.install_manifest_url);
+      if (u.protocol !== "https:") continue;
+      const url = "itms-services://?action=download-manifest&url=" + encodeURIComponent(u.toString());
+      installations.push({ title: app.title, url });
+    } catch (_) { /* Unsupported manifest URL is not exposed. */ }
+  }
   return {
     id: row.id,
     status: row.status,
     created_at: row.created_at,
-    apps: items.map((i: any) => i?.app_catalog?.title).filter((x: unknown) => typeof x === "string")
+    apps: items.map((i: any) => i?.app_catalog?.title).filter((x: unknown) => typeof x === "string"),
+    installations,
+    requested_help: {
+      installation: activities.some((a: any) => a.action === "installation_help"),
+      activation: activities.some((a: any) => a.action === "activation_help")
+    }
   };
 }
 
+const orderRead = "select=id,status,created_at,app_order_items(app_catalog(title,is_available,install_manifest_url)),app_order_actions(action)";
 async function listOrders(userId: number) {
-  const data = await db("app_orders?select=id,status,created_at,app_order_items(app_catalog(title))&telegram_user_id=eq." +
+  const data = await db("app_orders?" + orderRead + "&telegram_user_id=eq." +
     userId + "&order=created_at.desc&limit=30");
   return (data || []).map(responseOrder);
+}
+
+async function notifyOrderAction(order: any, action: string, userId: number) {
+  const token = Deno.env.get("TELEGRAM_BOT_TOKEN")?.trim();
+  if (!token) return;
+  const names: Record<string, string> = {
+    installation_help: "Нужна помощь с установкой",
+    activation_help: "Нужна помощь с активацией",
+    installed: "Клиент сообщил об установке",
+    completed: "Клиент подтвердил работу приложения"
+  };
+  const actionName = names[action] || action;
+  const adminChatId = Deno.env.get("TELEGRAM_ADMIN_CHAT_ID");
+  const messages: Array<{ chat_id: string | number; text: string }> = [{
+    chat_id: userId,
+    text: "Apple Inside Apps\\n\\nЗаявка " + order.id.slice(0, 8).toUpperCase() +
+      "\\n" + actionName + ".\\nПри необходимости свяжитесь со службой поддержки."
+  }];
+  if (adminChatId && /^-?\\d+$/.test(adminChatId)) messages.push({
+    chat_id: adminChatId,
+    text: "Apple Inside Apps: действие клиента\\n" + order.id +
+      "\\nTelegram ID: " + userId + "\\n" + actionName
+  });
+  for (const message of messages) {
+    try {
+      const r = await fetch("https://api.telegram.org/bot" + token + "/sendMessage", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(message), signal:AbortSignal.timeout(5000)
+      });
+      if (!r.ok) console.warn("Order action Telegram notification failed", { status:r.status });
+    } catch (_) { console.warn("Order action Telegram notification unavailable"); }
+  }
 }
 
 async function notify(order: any, titles: string[], userId: number) {
@@ -201,6 +254,55 @@ Deno.serve(async (req: Request) => {
     const userId = await authenticate(body.init_data);
     if (userId === null) return json({ error: "INVALID_TELEGRAM_AUTH" }, 401);
     if (body.action === "my_orders") return json({ ok: true, orders: await listOrders(userId) });
+    if (body.action === "order_event") {
+      const orderId: unknown = body.order_id;
+      const event: unknown = body.event;
+      if (typeof orderId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderId) ||
+        typeof event !== "string" ||
+        !["installation_help","activation_help","installed","completed"].includes(event)) {
+        return json({ error:"INVALID_ORDER_ACTION" },400);
+      }
+      const rows = await db("app_orders?" + orderRead + "&id=eq." + orderId +
+        "&telegram_user_id=eq." + userId + "&limit=1");
+      if (!rows?.length) return json({ error:"ORDER_NOT_FOUND" },404);
+      const row = rows[0];
+      const prior = (row.app_order_actions || []).some((a: any) => a.action === event);
+      if (prior) return json({ ok:true, order:responseOrder(row), duplicate:true });
+      const allowed = event === "installation_help"
+        ? ["new","installing"].includes(row.status)
+        : event === "activation_help"
+          ? ["installing","awaiting_activation"].includes(row.status)
+          : event === "installed"
+            ? row.status === "installing" && responseOrder(row).installations.length > 0
+            : row.status === "awaiting_activation";
+      if (!allowed) return json({ error:"ACTION_NOT_AVAILABLE" },409);
+
+      if (event === "installed" || event === "completed") {
+        const oldStatus = event === "installed" ? "installing" : "awaiting_activation";
+        const newStatus = event === "installed" ? "awaiting_activation" : "completed";
+        const updated = await db("app_orders?id=eq." + orderId +
+          "&telegram_user_id=eq." + userId + "&status=eq." + oldStatus +
+          "&select=id", {
+          method:"PATCH", headers:{"Content-Type":"application/json","Prefer":"return=representation"},
+          body:JSON.stringify({status:newStatus})
+        });
+        if (!updated?.length) return json({ error:"ORDER_CHANGED" },409);
+      }
+      try {
+        await db("app_order_actions",{
+          method:"POST",
+          headers:{"Content-Type":"application/json","Prefer":"resolution=ignore-duplicates,return=minimal"},
+          body:JSON.stringify({order_id:orderId,telegram_user_id:userId,action:event})
+        });
+      } catch (e) {
+        // A stage change has already succeeded; do not mislead clients into retrying it.
+        console.error("Order event activity insert failed",String(e).slice(0,120));
+      }
+      await notifyOrderAction(row,event,userId);
+      const fresh = await db("app_orders?" + orderRead + "&id=eq." + orderId +
+        "&telegram_user_id=eq." + userId + "&limit=1");
+      return json({ok:true,order:responseOrder(fresh[0])});
+    }
 
     if (body.action !== "create_order") return json({ error: "UNKNOWN_ACTION" }, 400);
     const slugs: unknown = body.app_slugs;
