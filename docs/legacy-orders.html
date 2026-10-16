@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f7f8fc">
+  <title>Apple Inside Apps — приложения для iPhone</title>
+  <meta name="description" content="Каталог приложений Apple Inside: выбор, заявка и понятная инструкция по установке на iPhone.">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root { --blue:#2457f5; --dark:#171c2b; --muted:#748097; --line:#e8ebf2; --surface:#fff; --background:#f7f8fc; --soft:#eef2ff; --radius:20px; }
+    * {box-sizing:border-box}
+    html {scroll-behavior:smooth}
+    body {margin:0;background:var(--background);color:var(--dark);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+    button,input {font:inherit}
+    button {cursor:pointer}
+    .app {max-width:650px;margin:0 auto;min-height:100vh;padding:env(safe-area-inset-top) 18px calc(116px + env(safe-area-inset-bottom))}
+    .top {display:flex;align-items:center;justify-content:space-between;padding:25px 0 23px}
+    .brand {display:flex;align-items:center;gap:11px}
+    .brand-mark {height:42px;width:42px;display:grid;place-items:center;border-radius:13px;background:#18243c;color:#fff;font-weight:800;font-size:16px;letter-spacing:-1px}
+    .brand-name {font-weight:790;font-size:17px;letter-spacing:-.55px}
+    .brand-sub {font-size:11px;color:var(--muted);margin-top:3px}
+    .top-status {display:flex;align-items:center;gap:7px;color:#33815e;font-size:11px;font-weight:700;background:#eaf7ef;border-radius:99px;padding:9px 11px}
+    .dot {width:6px;height:6px;border-radius:50%;background:#2ba873}
+    .hero {border-radius:27px;padding:26px 24px 24px;background:linear-gradient(129deg,#192843 0%,#254b9b 65%,#4073fa 110%);color:#fff;position:relative;overflow:hidden;box-shadow:0 13px 24px rgba(35,75,170,.14)}
+    .hero:after {content:"";position:absolute;width:230px;height:230px;border-radius:50%;background:rgba(255,255,255,.07);top:-128px;right:-110px;box-shadow:-45px 170px 0 10px rgba(255,255,255,.025);pointer-events:none}
+    .hero-tag {font-size:10px;font-weight:770;letter-spacing:1.25px;text-transform:uppercase;color:#a4c5ff}
+    h1 {font-size:30px;line-height:1.13;letter-spacing:-1.05px;margin:17px 0 13px;max-width:310px;font-weight:780}
+    .hero p {color:#d5e3ff;font-size:13px;line-height:1.62;max-width:330px;margin:0}
+    .hero button {margin-top:23px;border:none;border-radius:12px;color:#233f7b;background:#fff;font-size:12px;font-weight:750;padding:12px 16px;display:flex;gap:11px;align-items:center}
+    .benefits {display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}
+    .benefit {background:#fff;border:1px solid var(--line);border-radius:14px;min-height:72px;padding:13px 10px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:7px}
+    .benefit b {font-size:12px;letter-spacing:-.1px}.benefit span {font-size:11px;color:var(--muted);line-height:1.2}
+    .section-head {margin:29px 0 13px;display:flex;align-items:center;justify-content:space-between}
+    h2 {margin:0;font-size:20px;letter-spacing:-.65px}
+    .section-head small {color:var(--muted);font-size:11px}
+    .search {display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:0 13px;height:48px}
+    .search svg {flex-shrink:0;color:#99a2b4}
+    .search input {width:100%;border:0;outline:0;color:var(--dark);background:transparent;font-size:14px}
+    .search input::placeholder {color:#a0a8b8}
+    .filters {display:flex;overflow-x:auto;gap:8px;padding:14px 0 1px;scrollbar-width:none}.filters::-webkit-scrollbar{display:none}
+    .chip {border:1px solid var(--line);background:#fff;border-radius:99px;padding:9px 13px;font-size:12px;white-space:nowrap;color:#566177;font-weight:650}
+    .chip.active {background:#1d2d4a;border-color:#1d2d4a;color:#fff}
+    .catalog-list {display:grid;gap:10px;margin-top:14px}
+    .app-card {display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-radius:17px;padding:14px;transition:border-color .1s,transform .1s}
+    .app-card:active {transform:scale(.99)}
+    .app-card.selected {border-color:#7e9bfd;background:#fcfdff}
+    .app-icon {width:48px;height:48px;flex:none;border-radius:14px;color:#fff;font-size:21px;font-weight:800;display:grid;place-items:center}
+    .app-icon.blue {background:linear-gradient(140deg,#3674fa,#1646a6)}
+    .app-icon.red {background:linear-gradient(140deg,#ff555f,#d92945)}
+    .app-icon.gold {background:linear-gradient(140deg,#f5d568,#df9c1d);color:#5c470f}
+    .app-icon.gray {background:linear-gradient(140deg,#9aacc4,#516680)}
+    .app-info {flex:1;min-width:0}
+    .app-title {font-size:14px;font-weight:760;line-height:1.25}
+    .app-desc {color:var(--muted);font-size:11px;margin-top:5px;line-height:1.35}
+    .app-tag {color:#6c77a0;background:#f2f4fa;display:inline-block;border-radius:5px;font-size:9px;font-weight:680;margin-top:7px;padding:5px 7px}
+    .plus {width:33px;height:33px;flex:none;border-radius:10px;border:1px solid #dce3f0;background:#fff;color:#244db2;display:grid;place-items:center;font-size:22px;font-weight:450}
+    .selected .plus {background:var(--blue);border-color:var(--blue);color:#fff}
+    .empty {text-align:center;padding:36px 14px;background:#fff;border:1px solid var(--line);border-radius:14px;color:var(--muted);font-size:13px}
+    .note {padding:14px;background:#e9efff;border-radius:14px;font-size:11px;color:#536b9b;line-height:1.55;margin-top:14px}
+    .text-section {background:#fff;border:1px solid var(--line);border-radius:19px;padding:19px;margin-top:17px}
+    .step {display:flex;gap:13px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line)}
+    .step:last-child {border-bottom:0}
+    .step-index {width:26px;height:26px;border-radius:9px;display:grid;place-items:center;background:#eaf0ff;color:#2856c3;flex:none;font-size:12px;font-weight:800}
+    .step strong {font-size:13px}.step p {font-size:12px;color:var(--muted);line-height:1.5;margin:5px 0 0}
+    .support-link {border:1px solid var(--line);border-radius:13px;padding:15px;display:flex;align-items:center;justify-content:space-between;margin-top:11px;text-decoration:none;color:var(--dark);background:#fff}
+    .support-link span {font-size:12px;font-weight:750}.support-link small {display:block;color:var(--muted);font-size:11px;margin-top:4px}
+    .page {display:none}.page.visible {display:block}
+    .navbar {position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.97);border-top:1px solid var(--line);z-index:15;padding:10px max(16px,calc((100% - 618px)/2)) calc(10px + env(safe-area-inset-bottom));display:flex;justify-content:space-around;backdrop-filter:blur(10px)}
+    .nav-item {display:flex;flex-direction:column;gap:4px;align-items:center;color:#8490a4;border:0;background:transparent;padding:5px 14px;font-size:10px;font-weight:700}
+    .nav-item.active {color:var(--blue)}.nav-item svg {width:22px;height:22px}
+    .cart {position:fixed;bottom:calc(76px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:14;width:calc(100% - 30px);max-width:620px}
+    .cart button {width:100%;display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border:0;border-radius:16px;background:var(--blue);box-shadow:0 10px 28px rgba(36,87,245,.26);color:#fff;font-size:13px;font-weight:760}
+    .cart-count {border-radius:8px;background:rgba(255,255,255,.17);padding:6px 10px;margin-left:10px}
+    .page-title {margin:15px 0 10px}.page-sub {color:var(--muted);font-size:13px;line-height:1.55;margin:0 0 16px}
+    .draft-card {background:#fff;border-radius:16px;padding:17px;margin-top:11px;border:1px solid var(--line)}
+    .draft-card b {font-size:13px}.draft-card p {font-size:12px;color:var(--muted);margin:8px 0 0;line-height:1.5}
+    .status {color:#a16b20;background:#fff5e4;font-size:10px;font-weight:750;padding:5px 8px;border-radius:7px}
+    .steps {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:17px 0}
+    .stage {border:1px solid #e4e9f4;background:#f8faff;border-radius:12px;padding:10px 8px;min-height:65px}
+    .stage-number {font-size:10px;color:#6780aa;font-weight:800}
+    .stage strong {font-size:11px;display:block;margin-top:5px;line-height:1.25}
+    .stage.current {background:#e9efff;border-color:#96aefe}
+    .stage.done{background:#eef8f2;border-color:#c9e7d5}
+    .stage.done strong{color:#248053}
+    .stage.compact{min-height:55px}
+    .stage.compact strong{font-size:10px}
+    .order-guidance{background:#f2f5fc;border-radius:12px;padding:12px 13px;color:#4d5c78;font-size:12px;line-height:1.6;margin:11px 0}
+    .order-install{display:block;text-align:center;text-decoration:none;background:#2659d8;color:#fff;border-radius:12px;padding:13px;font-size:13px;font-weight:760;margin:10px 0}
+    .order-button{border:1px solid #d8e1f1;border-radius:11px;background:#fff;color:#294b96;font-size:12px;font-weight:750;padding:11px 12px;display:block;width:100%;margin:8px 0 0;line-height:1.45}
+    .order-button.strong{background:#2659d8;color:#fff;border-color:#2659d8}
+    .order-button:disabled{opacity:.5}
+    .order-support{display:block;margin-top:10px;font-size:11px;color:#5572aa;text-decoration:none}
+    .order-done{background:#e8f6ee;color:#28714a;padding:10px;border-radius:10px;font-size:12px;margin-top:11px}
+    .info-line {color:#738098;font-size:12px;line-height:1.55;margin:12px 0}
+    .app-card .app-info {cursor:pointer}
+    .shade {position:fixed;inset:0;background:rgba(12,18,35,.5);display:none;align-items:flex-end;z-index:30}
+    .shade.open {display:flex}
+    .sheet {width:100%;max-width:650px;margin:auto auto 0;background:#fff;border-radius:24px 24px 0 0;padding:24px 20px calc(24px + env(safe-area-inset-bottom));max-height:85vh;overflow:auto;box-shadow:0 -15px 60px rgba(0,0,0,.12)}
+    .sheet-top {display:flex;align-items:center;justify-content:space-between}
+    .sheet h3 {font-size:20px;letter-spacing:-.65px;margin:0}
+    .close {border:none;border-radius:9px;background:#f0f2f7;font-size:18px;width:31px;height:31px}
+    .sheet p {font-size:12px;color:var(--muted);line-height:1.5}
+    .summary {background:#f6f8fc;padding:14px;border-radius:12px;color:#344259;font-size:12px;line-height:1.8;margin:16px 0}
+    .primary {border:0;background:var(--blue);border-radius:13px;color:white;font-weight:750;width:100%;padding:15px;font-size:13px;margin-top:8px}
+    .secondary {border:1px solid #dbe1ee;background:white;border-radius:13px;color:#294b96;font-weight:750;width:100%;padding:14px;font-size:13px;margin-top:9px}
+    .toast {position:fixed;left:50%;bottom:145px;transform:translateX(-50%);background:#1d2b47;border-radius:11px;color:#fff;z-index:50;display:none;padding:12px 15px;font-size:12px;white-space:nowrap}
+    @media(max-width:350px){h1{font-size:26px}.hero{padding:23px 20px}.app{padding-left:13px;padding-right:13px}.benefit{padding:10px 8px}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand"><div class="brand-mark">AI</div><div><div class="brand-name">Apple Inside <span style="color:#5977b7">Apps</span></div><div class="brand-sub">Ваши приложения. Без лишних сложностей.</div></div></div>
+      <div class="top-status"><span class="dot"></span>На связи</div>
+    </header>
+    <main>
+      <div id="catalog-page" class="page visible">
+        <section class="hero">
+          <div class="hero-tag">Установка приложений на iPhone</div>
+          <h1>Нужные приложения — проще, чем кажется.</h1>
+          <p>Выбирайте приложения онлайн. Мы поможем с установкой и активацией, не требуя подключения к компьютеру.</p>
+          <button id="hero-button" type="button">Выбрать приложение <span aria-hidden="true">→</span></button>
+        </section>
+        <div class="benefits">
+          <div class="benefit"><b>01 · Онлайн</b><span>Без визита в сервис</span></div>
+          <div class="benefit"><b>02 · Понятно</b><span>Инструкция по шагам</span></div>
+          <div class="benefit"><b>03 · Помощь</b><span>Поддержка специалиста</span></div>
+        </div>
+        <div id="catalog-section" class="section-head"><h2>Каталог приложений</h2><small>Выберите нужные</small></div>
+        <label class="search" aria-label="Поиск по каталогу">
+          <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+          <input id="search" type="search" placeholder="Название приложения" autocomplete="off">
+        </label>
+        <div id="filters" class="filters" aria-label="Категории"></div>
+        <div id="catalog-list" class="catalog-list"></div>
+        <div class="note">Здесь можно выбрать приложение и отправить заявку на установку без оплаты. Сервис самостоятельной покупки через отдельный сайт готовится к запуску.</div>
+      </div>
+      <div id="guide-page" class="page">
+        <h2 class="page-title">Как проходит установка</h2>
+        <p class="page-sub">Инструкция для клиента. Данные активации передаются специалистом отдельно после подтверждения заказа.</p>
+        <div class="text-section">
+          <div class="step"><div class="step-index">1</div><div><strong>Выберите приложения</strong><p>Отметьте программы, которые нужны на iPhone, и отправьте заявку в сервис.</p></div></div>
+          <div class="step"><div class="step-index">2</div><div><strong>Получите ссылку</strong><p>После проверки заявки и подтверждения возможности установки специалист подготовит ссылку и инструкцию. Сейчас оплата отключена.</p></div></div>
+          <div class="step"><div class="step-index">3</div><div><strong>Установите приложение</strong><p>Откройте ссылку с iPhone и выполните указания для выбранной программы.</p></div></div>
+          <div class="step"><div class="step-index">4</div><div><strong>Активация через «Контент и покупки»</strong><p>Если требуется, откройте «Настройки» → своё имя → «Контент и покупки». Используйте только учётную запись, на применение которой у вас есть право. Не сообщайте пароли и коды подтверждения третьим лицам.</p></div></div>
+          <div class="step"><div class="step-index">5</div><div><strong>Проверьте запуск</strong><p>Проверьте запуск приложения. В разделе «Мои заявки» подтвердите, что всё работает. Перед выходом из «Контент и покупки» уточните у специалиста последствия для установленной программы.</p></div></div>
+        </div>
+        <div class="note">Важно: Apple Inside Apps не запрашивает пароли Apple Account, коды двухфакторной проверки и банковские данные. Не подтверждайте незнакомые запросы на вход. Для установки необходимы совместимость устройства и разрешённый способ распространения приложения.</div>
+      </div>
+      <div id="orders-page" class="page">
+        <h2 class="page-title">Мои заявки</h2>
+        <p class="page-sub">Ваши настоящие заявки из нашей базы. Для просмотра откройте мини-приложение внутри Telegram.</p>
+        <div id="drafts"></div>
+      </div>
+      <div id="support-page" class="page">
+        <h2 class="page-title">Мы поможем</h2>
+        <p class="page-sub">Если приложение не установилось, требуется активация или есть вопрос по совместимости, свяжитесь с нами.</p>
+        <div class="text-section">
+          <strong style="font-size:15px">Apple Inside Service</strong>
+          <p style="font-size:12px;line-height:1.65;color:#748097">Анапа, ул. Ленина, 173А, корпус 4<br>+7 938 432-22-02</p>
+          <a class="support-link" href="https://wa.me/79384322202" target="_blank" rel="noopener"><div><span>Написать в WhatsApp</span><small>Временный канал для тестовых заявок</small></div><span>↗</span></a>
+          <a class="support-link" href="https://service-ai.ru/" target="_blank" rel="noopener"><div><span>Сайт сервисного центра</span><small>service-ai.ru</small></div><span>↗</span></a>
+          <a class="support-link" href="tel:+79384322202"><div><span>Позвонить</span><small>+7 938 432-22-02</small></div><span>↗</span></a>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div id="cart" class="cart" hidden><button id="cart-button" type="button"><span>Оформить заявку <span id="cart-count" class="cart-count">0</span></span><span>Продолжить →</span></button></div>
+  <nav class="navbar" aria-label="Основное меню">
+    <button class="nav-item active" data-page="catalog" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Каталог</button>
+    <button class="nav-item" data-page="guide" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Инструкция</button>
+    <button class="nav-item" data-page="orders" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4m8-4v4M4 11h16"/></svg>Заявки</button>
+    <button class="nav-item" data-page="support" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.6 2.3c-.9.5-1.1.9-1.1 2.2M12 17h.01"/></svg>Помощь</button>
+  </nav>
+  <div id="shade" class="shade" role="presentation"><section class="sheet" role="dialog" aria-modal="true" aria-label="Оформление заявки"><div class="sheet-top"><h3 id="sheet-title">Ваша заявка</h3><button type="button" class="close" id="close-sheet" aria-label="Закрыть">×</button></div><div id="sheet-content"></div></section></div>
+  <div id="toast" class="toast" role="status"></div>
+  <script>
+    (function(){
+      "use strict";
+      var tg=window.Telegram&&window.Telegram.WebApp;
+      if(tg){try{tg.ready();tg.expand();if(tg.setHeaderColor)tg.setHeaderColor("#f7f8fc")}catch(e){}}
+      var catalog=[
+        {id:"sber",title:"СберБанк Онлайн",desc:"Банковское приложение",category:"Банки",symbol:"С",tone:"blue"},
+        {id:"alfa",title:"Альфа-Банк",desc:"Банковское приложение",category:"Банки",symbol:"А",tone:"red"},
+        {id:"tbank",title:"Т-Банк",desc:"Банковское приложение",category:"Банки",symbol:"Т",tone:"gold"},
+        {id:"other",title:"Другое приложение",desc:"Уточнить название и доступность",category:"Другое",symbol:"+",tone:"gray"}
+      ];
+      var API_URL="https://cmcfwkfhyxfljpowbkpj.supabase.co/functions/v1/apps-orders";
+      var filter="Все";
+      var query="";
+      var selected=[];
+      var pendingRequestKey=null;
+      var sending=false;
+      var page="catalog";
+      var drafts=[];
+      try{drafts=JSON.parse(localStorage.getItem("ai-apps-drafts-v1")||"[]");if(!Array.isArray(drafts))drafts=[]}catch(e){drafts=[]}
+      function byId(id){return document.getElementById(id)}
+      function activeNames(){return catalog.filter(function(x){return selected.indexOf(x.id)!==-1}).map(function(x){return x.title})}
+      function escapeHtml(v){return String(v).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+      function renderFilters(){
+        var cats=["Все"].concat(Array.from(new Set(catalog.map(function(x){return x.category}))));
+        byId("filters").innerHTML=cats.map(function(v){return '<button type="button" class="chip'+(filter===v?' active':'')+'" data-filter="'+escapeHtml(v)+'">'+escapeHtml(v)+'</button>'}).join("");
+        Array.from(document.querySelectorAll("[data-filter]")).forEach(function(el){el.onclick=function(){filter=el.getAttribute("data-filter");renderFilters();renderCatalog()}});
+      }
+      function flowSteps(status,compact){
+        var labels=["Заявка","Установка","Активация"];
+        var current=status==="installing"?1:status==="awaiting_activation"?2:status==="completed"?3:0;
+        return '<div class="steps">'+labels.map(function(t,i){
+          var stage=i<current?" done":i===current?" current":"";
+          return '<div class="stage'+stage+(compact?' compact':'')+'"><span class="stage-number">0'+(i+1)+'</span><strong>'+t+'</strong></div>';
+        }).join("")+'</div>';
+      }
+      function showAppDetails(id){
+        var app=catalog.find(function(x){return x.id===id});
+        if(!app)return;
+        byId("sheet-title").textContent=app.title;
+        byId("sheet-content").innerHTML='<p class="info-line">Удалённая установка на iPhone</p>'+flowSteps()+
+          '<p class="info-line">'+(app.paymentReady?
+          'Проверяем возможность установки. Сейчас здесь можно оформить заявку без оплаты.':
+          'Наличие приложения уточняется. Здесь оформление заявки без оплаты.')+'</p>'+
+          (Number.isInteger(app.priceRub)?'<div class="summary"><strong>Одно приложение: '+app.priceRub+' ₽</strong><div style="font-size:11px;color:#748097">В мини-приложении оплата не принимается.</div></div>':'')+
+          '<button type="button" class="primary" id="detail-request">Запросить установку</button>'+
+          '<button type="button" class="secondary" id="detail-guide">Подробнее об активации</button>';
+        byId("shade").classList.add("open");
+        byId("detail-request").onclick=function(){
+          if(selected.indexOf(id)===-1)selected=[id];
+          pendingRequestKey=null;renderCatalog();renderCart();openSheet(null);
+        };
+        byId("detail-guide").onclick=function(){byId("shade").classList.remove("open");showPage("guide")};
+      }
+      function renderCatalog(){
+        var items=catalog.filter(function(x){return (filter==="Все"||filter===x.category)&&(!query||x.title.toLowerCase().indexOf(query)!==-1)});
+        byId("catalog-list").innerHTML=items.length?items.map(function(x){
+          var on=selected.indexOf(x.id)!==-1;
+          return '<article class="app-card'+(on?' selected':'')+'" data-app="'+x.id+'"><div class="app-icon '+x.tone+'">'+escapeHtml(x.symbol)+'</div><div class="app-info"><div class="app-title">'+escapeHtml(x.title)+'</div><div class="app-desc">'+escapeHtml(x.desc)+'</div><span class="app-tag">'+(Number.isInteger(x.priceRub)?x.priceRub+' ₽ за приложение':'Цена уточняется')+'</span></div><button class="plus" aria-label="'+(on?'Убрать':'Добавить')+' '+escapeHtml(x.title)+'" type="button">'+(on?'✓':'+')+'</button></article>'
+        }).join(""):'<div class="empty">По этому запросу приложений не найдено.</div>';
+        Array.from(document.querySelectorAll("[data-app]")).forEach(function(el){
+          el.onclick=function(){showAppDetails(el.getAttribute("data-app"))};
+          el.querySelector("button").onclick=function(e){e.stopPropagation();var id=el.getAttribute("data-app");selected=selected.indexOf(id)===-1?selected.concat([id]):selected.filter(function(x){return x!==id});pendingRequestKey=null;renderCatalog();renderCart()};
+        });
+      }
+      function renderCart(){var el=byId("cart");el.hidden=page!=="catalog"||selected.length===0;byId("cart-count").textContent=selected.length}
+      function showPage(name){
+        page=name;
+        Array.from(document.querySelectorAll(".page")).forEach(function(el){el.classList.toggle("visible",el.id===name+"-page")});
+        Array.from(document.querySelectorAll("[data-page]")).forEach(function(el){el.classList.toggle("active",el.getAttribute("data-page")===name)});
+        if(name==="orders")renderOrders();
+        renderCart();window.scrollTo(0,0);
+      }
+      function activeSlugs(){return selected.slice()}
+      function getInitData(){return tg&&typeof tg.initData==="string"?tg.initData:""}
+      function friendlyError(code){
+        if(code==="BOT_TOKEN_NOT_CONFIGURED")return "Сервис заявок готовится к запуску. Повторите попытку позже.";
+        if(code==="INVALID_TELEGRAM_AUTH")return "Не удалось подтвердить вход. Закройте приложение и заново откройте его из Telegram.";
+        if(code==="RATE_LIMIT")return "Вы отправили слишком много заявок. Попробуйте через час.";
+        if(code==="UNKNOWN_APP")return "Состав каталога изменился. Перезапустите мини-приложение.";
+        return "Не удалось сохранить заявку. Повторите попытку позже.";
+      }
+      async function callApi(payload){
+        var response=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+        var data=await response.json().catch(function(){return {}});
+        if(!response.ok||!data.ok){var e=new Error(friendlyError(data.error));e.code=data.error;throw e}
+        return data;
+      }
+      function formatDate(s){try{return new Date(s).toLocaleString("ru-RU")}catch(e){return s||""}}
+      function statusName(s){return ({new:"Заявка принята",awaiting_payment:"Ожидает оплаты",paid:"Оплачено",installing:"Установка",awaiting_activation:"Активация",completed:"Завершена",cancelled:"Отменена",refunded:"Возврат"})[s]||"В обработке"}
+      function openSheet(d){
+        byId("sheet-title").textContent=d?"Заявка "+String(d.id).slice(0,8).toUpperCase():"Ваша заявка";
+        var names=d?d.apps:activeNames();
+        var items='<div class="summary">'+names.map(function(x){return '<div>✓ '+escapeHtml(x)+'</div>'}).join("")+'</div>';
+        var intro=d?"Заявка успешно сохранена в нашей базе. Мы подтвердим возможность установки.":"Проверьте список. Здесь можно оставить заявку без оплаты.";
+        var quote=null;
+        if(!d&&selected.length===1){
+          var chosen=catalog.find(function(x){return x.id===selected[0]});
+          if(chosen&&Number.isInteger(chosen.priceRub))quote=chosen.priceRub;
+        }
+        var quoteLine=d?'':(quote!==null?'<div class="summary"><strong>Базовая цена: '+quote+' ₽</strong><div style="font-size:11px;color:#748097">Это справочная цена. Оплата здесь не проводится.</div></div>':(selected.length>1?'<div class="summary"><strong>Цена комплекта уточняется</strong><div style="font-size:11px;color:#748097">Для нескольких приложений будет отдельная пакетная цена.</div></div>':''));
+        byId("sheet-content").innerHTML='<p>'+intro+'</p>'+flowSteps()+items+quoteLine+(d?
+          '<button type="button" id="view-orders" class="primary">Посмотреть мои заявки</button><button type="button" id="close-done" class="secondary">Закрыть</button>':
+          '<button type="button" id="create-order" class="primary">Запросить установку (без оплаты)</button><p style="font-size:11px;color:#748097">Заявка отправляется только после нажатия кнопки. Стоимость уточняется.</p>');
+        byId("shade").classList.add("open");
+        if(d){
+          byId("view-orders").onclick=function(){byId("shade").classList.remove("open");showPage("orders")};
+          byId("close-done").onclick=function(){byId("shade").classList.remove("open")};
+        }else{
+          byId("create-order").onclick=sendOrder;
+        }
+      }
+      async function sendOrder(){
+        if(sending||!selected.length)return;
+        if(!getInitData()){toast("Откройте каталог из Telegram, а не браузера");return}
+        if(!window.crypto||!window.crypto.randomUUID){toast("Не удалось подготовить заявку. Обновите Telegram.");return}
+        var button=byId("create-order"); if(!button)return;
+        sending=true;button.disabled=true;button.textContent="Отправляем...";
+        if(!pendingRequestKey)pendingRequestKey=crypto.randomUUID();
+        try{
+          var reply=await callApi({action:"create_order",init_data:getInitData(),request_key:pendingRequestKey,app_slugs:activeSlugs()});
+          selected=[];pendingRequestKey=null;renderCatalog();renderCart();openSheet(reply.order);
+        }catch(e){
+          button.disabled=false;button.textContent="Повторить отправку";
+          toast(e.message||"Не удалось сохранить заявку");
+          var detail=byId("send-error");
+          if(!detail){detail=document.createElement("p");detail.id="send-error";detail.style.color="#bb3542";button.insertAdjacentElement("afterend",detail)}
+          detail.textContent=e.message||"Не удалось сохранить заявку";
+        }finally{sending=false}
+      }
+      async function loadCatalog(){
+        try{
+          var r=await fetch(API_URL,{method:"GET",cache:"no-store"});
+          var j=await r.json();
+          if(!r.ok||!j.ok||!Array.isArray(j.apps))return;
+          var old={};catalog.forEach(function(a){old[a.id]=a});
+          var next=j.apps.filter(function(a){return typeof a.slug==="string"&&typeof a.title==="string"&&typeof a.category==="string"})
+            .map(function(a){var o=old[a.slug]||{};return {id:a.slug,title:a.title,desc:a.description||o.desc||"По запросу",category:a.category,symbol:o.symbol||"●",tone:o.tone||"gray",priceStars:Number.isInteger(a.price_stars)?a.price_stars:null,priceRub:Number.isInteger(a.price_rub)?a.price_rub:null,paymentReady:a.payment_ready===true}});
+          if(next.length){catalog=next;selected=selected.filter(function(s){return catalog.some(function(a){return a.id===s})});renderFilters();renderCatalog();renderCart()}
+        }catch(e){/* Use initial preview catalog while network is unavailable. */}
+      }
+      function toast(s){var el=byId("toast");el.textContent=s;el.style.display="block";clearTimeout(toast.timer);toast.timer=setTimeout(function(){el.style.display="none"},2300)}
+      function copyText(s){
+        if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(s).then(function(){toast("Текст заявки скопирован")}).catch(function(){toast("Не удалось скопировать: откройте заявку в Telegram")});
+        else toast("Буфер обмена недоступен: отправьте через Telegram");
+      }
+      function orderEventButton(id,event,label,strong){
+        return '<button type="button" class="order-button'+(strong?' strong':'')+'" data-order-event="'+event+'" data-order-id="'+escapeHtml(id)+'">'+escapeHtml(label)+'</button>';
+      }
+      function orderCard(d){
+        var id=String(d.id), shortId=id.slice(0,8).toUpperCase();
+        var apps=Array.isArray(d.apps)?d.apps:[];
+        var installs=Array.isArray(d.installations)?d.installations:[];
+        var asked=d.requested_help||{};
+        var out='<div class="draft-card"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'+
+          '<b>Заявка '+escapeHtml(shortId)+'</b><span class="status">'+escapeHtml(statusName(d.status))+'</span></div>'+
+          '<p>'+apps.map(escapeHtml).join(", ")+'</p>'+
+          '<p>'+escapeHtml(formatDate(d.created_at))+
+          (Number.isInteger(d.total_rub)?' · '+d.total_rub+' ₽':'')+'</p>'+
+          flowSteps(d.status,true);
+        if(d.status==="new"){
+          out+='<div class="order-guidance">Заявка принята. Проверяем возможность установки. Ссылка появится только после проверки и разрешения выдачи.</div>';
+          if(!asked.installation)out+=orderEventButton(id,"installation_help","Нужна помощь с установкой",false);
+          else out+='<div class="order-done">Запрос помощи сохранён.</div>';
+        }else if(d.status==="installing"){
+          out+='<div class="order-guidance">'+(installs.length?
+            'Установочная ссылка подготовлена. Для открытия iOS может понадобиться Safari.':
+            'Этап установки открыт, но проверенная ссылка ещё не выдана.')+'</div>';
+          installs.forEach(function(item){
+            out+='<a class="order-install" href="'+escapeHtml(item.url)+'">Установить: '+escapeHtml(item.title)+' ↗</a>';
+          });
+          if(installs.length)out+=orderEventButton(id,"installed","Приложение установлено — перейти к активации",true);
+          if(!asked.installation)out+=orderEventButton(id,"installation_help","Нужна помощь с установкой",false);
+          if(asked.installation)out+='<div class="order-done">Запрос помощи с установкой сохранён.</div>';
+        }else if(d.status==="awaiting_activation"){
+          out+='<div class="order-guidance">Проверьте приложение. Если требуется активация, откройте «Настройки» → своё имя → «Контент и покупки». Не передавайте специалисту пароли и коды подтверждения.</div>';
+          if(!asked.activation)out+=orderEventButton(id,"activation_help","Нужна помощь с активацией",false);
+          else out+='<div class="order-done">Запрос помощи с активацией сохранён.</div>';
+          out+=orderEventButton(id,"completed","Приложение работает — завершить",true);
+        }else if(d.status==="completed"){
+          out+='<div class="order-done">Установка и проверка завершены. Спасибо!</div>';
+        }else{
+          out+='<div class="order-guidance">Текущий статус: '+escapeHtml(statusName(d.status))+'. При возникновении вопросов свяжитесь с поддержкой.</div>';
+        }
+        var support="https://wa.me/79384322202?text="+encodeURIComponent("Здравствуйте! Нужна помощь по заявке "+shortId);
+        if(d.status!=="completed")out+='<a class="order-support" href="'+escapeHtml(support)+'" target="_blank" rel="noopener">Связаться со специалистом ↗</a>';
+        return out+'</div>';
+      }
+      async function submitOrderEvent(button){
+        if(button.disabled)return;
+        var orderId=button.getAttribute("data-order-id"),event=button.getAttribute("data-order-event");
+        if(!getInitData()){toast("Откройте приложение внутри Telegram");return}
+        button.disabled=true;var original=button.textContent;button.textContent="Сохраняем...";
+        try{
+          await callApi({action:"order_event",init_data:getInitData(),order_id:orderId,event:event});
+          toast("Действие сохранено");
+          await renderOrders();
+        }catch(e){
+          button.disabled=false;button.textContent=original;toast(e.message||"Не удалось обновить заявку");
+        }
+      }
+      async function renderOrders(){
+        var el=byId("drafts");
+        if(!getInitData()){el.innerHTML='<div class="empty">Откройте мини-приложение из бота @AppleInsideAppsBot, чтобы увидеть свои заявки.</div>';return}
+        el.innerHTML='<div class="empty">Загружаем ваши заявки...</div>';
+        try{
+          var result=await callApi({action:"my_orders",init_data:getInitData()});
+          var orders=result.orders||[];
+          if(!orders.length){el.innerHTML='<div class="empty">Заявок пока нет. Выберите приложение в каталоге.</div>';return}
+          el.innerHTML=orders.map(orderCard).join("");
+          Array.from(el.querySelectorAll("[data-order-event]")).forEach(function(button){
+            button.onclick=function(){submitOrderEvent(button)};
+          });
+        }catch(e){
+          el.innerHTML='<div class="empty">'+escapeHtml(e.message||"Не удалось загрузить заявки")+'<button class="secondary" id="retry-orders" type="button">Повторить</button></div>';
+          var retry=byId("retry-orders");if(retry)retry.onclick=renderOrders;
+        }
+      }
+      byId("search").oninput=function(e){query=e.target.value.trim().toLowerCase();renderCatalog()};
+      byId("hero-button").onclick=function(){byId("catalog-section").scrollIntoView({behavior:"smooth",block:"start"})};
+      byId("cart-button").onclick=function(){if(selected.length)openSheet(null)};
+      byId("close-sheet").onclick=function(){byId("shade").classList.remove("open")};
+      byId("shade").onclick=function(e){if(e.target===byId("shade"))byId("shade").classList.remove("open")};
+      document.addEventListener("keydown",function(e){if(e.key==="Escape")byId("shade").classList.remove("open")});
+      Array.from(document.querySelectorAll("[data-page]")).forEach(function(el){el.onclick=function(){showPage(el.getAttribute("data-page"))}});
+      renderFilters();renderCatalog();renderCart();loadCatalog();
+    })();
+  </script>
+</body>
+</html>
