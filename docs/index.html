@@ -81,6 +81,17 @@
     .stage-number {font-size:10px;color:#6780aa;font-weight:800}
     .stage strong {font-size:11px;display:block;margin-top:5px;line-height:1.25}
     .stage.current {background:#e9efff;border-color:#96aefe}
+    .stage.done{background:#eef8f2;border-color:#c9e7d5}
+    .stage.done strong{color:#248053}
+    .stage.compact{min-height:55px}
+    .stage.compact strong{font-size:10px}
+    .order-guidance{background:#f2f5fc;border-radius:12px;padding:12px 13px;color:#4d5c78;font-size:12px;line-height:1.6;margin:11px 0}
+    .order-install{display:block;text-align:center;text-decoration:none;background:#2659d8;color:#fff;border-radius:12px;padding:13px;font-size:13px;font-weight:760;margin:10px 0}
+    .order-button{border:1px solid #d8e1f1;border-radius:11px;background:#fff;color:#294b96;font-size:12px;font-weight:750;padding:11px 12px;display:block;width:100%;margin:8px 0 0;line-height:1.45}
+    .order-button.strong{background:#2659d8;color:#fff;border-color:#2659d8}
+    .order-button:disabled{opacity:.5}
+    .order-support{display:block;margin-top:10px;font-size:11px;color:#5572aa;text-decoration:none}
+    .order-done{background:#e8f6ee;color:#28714a;padding:10px;border-radius:10px;font-size:12px;margin-top:11px}
     .info-line {color:#738098;font-size:12px;line-height:1.55;margin:12px 0}
     .app-card .app-info {cursor:pointer}
     .shade {position:fixed;inset:0;background:rgba(12,18,35,.5);display:none;align-items:flex-end;z-index:30}
@@ -130,12 +141,12 @@
         <p class="page-sub">Инструкция для клиента. Данные активации передаются специалистом отдельно после подтверждения заказа.</p>
         <div class="text-section">
           <div class="step"><div class="step-index">1</div><div><strong>Выберите приложения</strong><p>Отметьте программы, которые нужны на iPhone, и отправьте заявку в сервис.</p></div></div>
-          <div class="step"><div class="step-index">2</div><div><strong>Получите ссылку</strong><p>После согласования стоимости специалист отправит проверенную ссылку и инструкцию.</p></div></div>
+          <div class="step"><div class="step-index">2</div><div><strong>Получите ссылку</strong><p>После проверки заявки и подтверждения возможности установки специалист подготовит ссылку и инструкцию. Сейчас оплата отключена.</p></div></div>
           <div class="step"><div class="step-index">3</div><div><strong>Установите приложение</strong><p>Откройте ссылку с iPhone и выполните указания для выбранной программы.</p></div></div>
-          <div class="step"><div class="step-index">4</div><div><strong>Активация через «Контент и покупки»</strong><p>Если требуется, перейдите в «Настройки» → ваше имя → «Контент и покупки». Выполните вход с помощью специалиста. Не выходите из основного iCloud.</p></div></div>
-          <div class="step"><div class="step-index">5</div><div><strong>Проверьте запуск</strong><p>Откройте приложение и проверьте работу. По согласованию со специалистом верните свою учётную запись для покупок.</p></div></div>
+          <div class="step"><div class="step-index">4</div><div><strong>Активация через «Контент и покупки»</strong><p>Если требуется, откройте «Настройки» → своё имя → «Контент и покупки». Используйте только учётную запись, на применение которой у вас есть право. Не сообщайте пароли и коды подтверждения третьим лицам.</p></div></div>
+          <div class="step"><div class="step-index">5</div><div><strong>Проверьте запуск</strong><p>Проверьте запуск приложения. В разделе «Мои заявки» подтвердите, что всё работает. Перед выходом из «Контент и покупки» уточните у специалиста последствия для установленной программы.</p></div></div>
         </div>
-        <div class="note">Важно: не вводите пароль основного iCloud на сторонних страницах и не подтверждайте незнакомые запросы на вход. Установка и активация зависят от совместимости и разрешённых способов распространения приложения.</div>
+        <div class="note">Важно: Apple Inside Apps не запрашивает пароли Apple Account, коды двухфакторной проверки и банковские данные. Не подтверждайте незнакомые запросы на вход. Для установки необходимы совместимость устройства и разрешённый способ распространения приложения.</div>
       </div>
       <div id="orders-page" class="page">
         <h2 class="page-title">Мои заявки</h2>
@@ -192,9 +203,12 @@
         byId("filters").innerHTML=cats.map(function(v){return '<button type="button" class="chip'+(filter===v?' active':'')+'" data-filter="'+escapeHtml(v)+'">'+escapeHtml(v)+'</button>'}).join("");
         Array.from(document.querySelectorAll("[data-filter]")).forEach(function(el){el.onclick=function(){filter=el.getAttribute("data-filter");renderFilters();renderCatalog()}});
       }
-      function flowSteps(){
-        return '<div class="steps">'+["Заявка","Установка","Активация"].map(function(t,i){
-          return '<div class="stage'+(i===0?" current":"")+'"><span class="stage-number">0'+(i+1)+'</span><strong>'+t+'</strong></div>';
+      function flowSteps(status,compact){
+        var labels=["Заявка","Установка","Активация"];
+        var current=status==="installing"?1:status==="awaiting_activation"?2:status==="completed"?3:0;
+        return '<div class="steps">'+labels.map(function(t,i){
+          var stage=i<current?" done":i===current?" current":"";
+          return '<div class="stage'+stage+(compact?' compact':'')+'"><span class="stage-number">0'+(i+1)+'</span><strong>'+t+'</strong></div>';
         }).join("")+'</div>';
       }
       function showAppDetails(id){
@@ -250,7 +264,7 @@
         return data;
       }
       function formatDate(s){try{return new Date(s).toLocaleString("ru-RU")}catch(e){return s||""}}
-      function statusName(s){return ({new:"Новая заявка",awaiting_payment:"Ожидает оплаты",paid:"Оплачено",installing:"Установка",awaiting_activation:"Активация",completed:"Завершена",cancelled:"Отменена",refunded:"Возврат"})[s]||"В обработке"}
+      function statusName(s){return ({new:"Заявка принята",awaiting_payment:"Ожидает оплаты",paid:"Оплачено",installing:"Установка",awaiting_activation:"Активация",completed:"Завершена",cancelled:"Отменена",refunded:"Возврат"})[s]||"В обработке"}
       function openSheet(d){
         byId("sheet-title").textContent=d?"Заявка "+String(d.id).slice(0,8).toUpperCase():"Ваша заявка";
         var names=d?d.apps:activeNames();
@@ -307,21 +321,76 @@
         if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(s).then(function(){toast("Текст заявки скопирован")}).catch(function(){toast("Не удалось скопировать: откройте заявку в Telegram")});
         else toast("Буфер обмена недоступен: отправьте через Telegram");
       }
+      function orderEventButton(id,event,label,strong){
+        return '<button type="button" class="order-button'+(strong?' strong':'')+'" data-order-event="'+event+'" data-order-id="'+escapeHtml(id)+'">'+escapeHtml(label)+'</button>';
+      }
+      function orderCard(d){
+        var id=String(d.id), shortId=id.slice(0,8).toUpperCase();
+        var apps=Array.isArray(d.apps)?d.apps:[];
+        var installs=Array.isArray(d.installations)?d.installations:[];
+        var asked=d.requested_help||{};
+        var out='<div class="draft-card"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'+
+          '<b>Заявка '+escapeHtml(shortId)+'</b><span class="status">'+escapeHtml(statusName(d.status))+'</span></div>'+
+          '<p>'+apps.map(escapeHtml).join(", ")+'</p>'+
+          '<p>'+escapeHtml(formatDate(d.created_at))+
+          (Number.isInteger(d.total_rub)?' · '+d.total_rub+' ₽':'')+'</p>'+
+          flowSteps(d.status,true);
+        if(d.status==="new"){
+          out+='<div class="order-guidance">Заявка принята. Проверяем возможность установки. Ссылка появится только после проверки и разрешения выдачи.</div>';
+          if(!asked.installation)out+=orderEventButton(id,"installation_help","Нужна помощь с установкой",false);
+          else out+='<div class="order-done">Запрос помощи сохранён.</div>';
+        }else if(d.status==="installing"){
+          out+='<div class="order-guidance">'+(installs.length?
+            'Установочная ссылка подготовлена. Для открытия iOS может понадобиться Safari.':
+            'Этап установки открыт, но проверенная ссылка ещё не выдана.')+'</div>';
+          installs.forEach(function(item){
+            out+='<a class="order-install" href="'+escapeHtml(item.url)+'">Установить: '+escapeHtml(item.title)+' ↗</a>';
+          });
+          if(installs.length)out+=orderEventButton(id,"installed","Приложение установлено — перейти к активации",true);
+          if(!asked.installation)out+=orderEventButton(id,"installation_help","Нужна помощь с установкой",false);
+          if(asked.installation)out+='<div class="order-done">Запрос помощи с установкой сохранён.</div>';
+        }else if(d.status==="awaiting_activation"){
+          out+='<div class="order-guidance">Проверьте приложение. Если требуется активация, откройте «Настройки» → своё имя → «Контент и покупки». Не передавайте специалисту пароли и коды подтверждения.</div>';
+          if(!asked.activation)out+=orderEventButton(id,"activation_help","Нужна помощь с активацией",false);
+          else out+='<div class="order-done">Запрос помощи с активацией сохранён.</div>';
+          out+=orderEventButton(id,"completed","Приложение работает — завершить",true);
+        }else if(d.status==="completed"){
+          out+='<div class="order-done">Установка и проверка завершены. Спасибо!</div>';
+        }else{
+          out+='<div class="order-guidance">Текущий статус: '+escapeHtml(statusName(d.status))+'. При возникновении вопросов свяжитесь с поддержкой.</div>';
+        }
+        var support="https://wa.me/79384322202?text="+encodeURIComponent("Здравствуйте! Нужна помощь по заявке "+shortId);
+        if(d.status!=="completed")out+='<a class="order-support" href="'+escapeHtml(support)+'" target="_blank" rel="noopener">Связаться со специалистом ↗</a>';
+        return out+'</div>';
+      }
+      async function submitOrderEvent(button){
+        if(button.disabled)return;
+        var orderId=button.getAttribute("data-order-id"),event=button.getAttribute("data-order-event");
+        if(!getInitData()){toast("Откройте приложение внутри Telegram");return}
+        button.disabled=true;var original=button.textContent;button.textContent="Сохраняем...";
+        try{
+          await callApi({action:"order_event",init_data:getInitData(),order_id:orderId,event:event});
+          toast("Действие сохранено");
+          await renderOrders();
+        }catch(e){
+          button.disabled=false;button.textContent=original;toast(e.message||"Не удалось обновить заявку");
+        }
+      }
       async function renderOrders(){
         var el=byId("drafts");
-        if(!getInitData()){el.innerHTML='<div class="empty">Откройте мини-приложение из бота @AppleInsideAppsBot, чтобы увидеть свои заказы.</div>';return}
+        if(!getInitData()){el.innerHTML='<div class="empty">Откройте мини-приложение из бота @AppleInsideAppsBot, чтобы увидеть свои заявки.</div>';return}
         el.innerHTML='<div class="empty">Загружаем ваши заявки...</div>';
         try{
           var result=await callApi({action:"my_orders",init_data:getInitData()});
           var orders=result.orders||[];
-          if(!orders.length){el.innerHTML='<div class="empty">Пока нет отправленных заявок. Выберите приложение в каталоге.</div>';return}
-          el.innerHTML=orders.map(function(d){
-            var shortId=String(d.id).slice(0,8).toUpperCase();
-            return '<div class="draft-card"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><b>Заявка '+escapeHtml(shortId)+'</b><span class="status">'+escapeHtml(statusName(d.status))+'</span></div><p>'+d.apps.map(escapeHtml).join(", ")+'</p><p>'+escapeHtml(formatDate(d.created_at))+'</p></div>';
-          }).join("");
+          if(!orders.length){el.innerHTML='<div class="empty">Заявок пока нет. Выберите приложение в каталоге.</div>';return}
+          el.innerHTML=orders.map(orderCard).join("");
+          Array.from(el.querySelectorAll("[data-order-event]")).forEach(function(button){
+            button.onclick=function(){submitOrderEvent(button)};
+          });
         }catch(e){
           el.innerHTML='<div class="empty">'+escapeHtml(e.message||"Не удалось загрузить заявки")+'<button class="secondary" id="retry-orders" type="button">Повторить</button></div>';
-          var b=byId("retry-orders");if(b)b.onclick=renderOrders;
+          var retry=byId("retry-orders");if(retry)retry.onclick=renderOrders;
         }
       }
       byId("search").oninput=function(e){query=e.target.value.trim().toLowerCase();renderCatalog()};
