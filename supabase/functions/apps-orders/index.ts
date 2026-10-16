@@ -155,6 +155,7 @@ function responseOrder(row: any) {
     id: row.id,
     status: row.status,
     created_at: row.created_at,
+    total_rub: Number.isInteger(row.total_rub) ? row.total_rub : null,
     apps: items.map((i: any) => i?.app_catalog?.title).filter((x: unknown) => typeof x === "string"),
     installations,
     requested_help: {
@@ -164,7 +165,7 @@ function responseOrder(row: any) {
   };
 }
 
-const orderRead = "select=id,status,created_at,app_order_items(app_catalog(title,is_available,install_manifest_url)),app_order_actions(action)";
+const orderRead = "select=id,status,created_at,total_rub,app_order_items(app_catalog(title,is_available,install_manifest_url)),app_order_actions(action)";
 async function listOrders(userId: number) {
   const data = await db("app_orders?" + orderRead + "&telegram_user_id=eq." +
     userId + "&order=created_at.desc&limit=30");
@@ -184,13 +185,13 @@ async function notifyOrderAction(order: any, action: string, userId: number) {
   const adminChatId = Deno.env.get("TELEGRAM_ADMIN_CHAT_ID");
   const messages: Array<{ chat_id: string | number; text: string }> = [{
     chat_id: userId,
-    text: "Apple Inside Apps\\n\\nЗаявка " + order.id.slice(0, 8).toUpperCase() +
-      "\\n" + actionName + ".\\nПри необходимости свяжитесь со службой поддержки."
+    text: "Apple Inside Apps\n\nЗаявка " + order.id.slice(0, 8).toUpperCase() +
+      "\n" + actionName + ".\nПри необходимости свяжитесь со службой поддержки."
   }];
-  if (adminChatId && /^-?\\d+$/.test(adminChatId)) messages.push({
+  if (adminChatId && /^-?\d+$/.test(adminChatId)) messages.push({
     chat_id: adminChatId,
-    text: "Apple Inside Apps: действие клиента\\n" + order.id +
-      "\\nTelegram ID: " + userId + "\\n" + actionName
+    text: "Apple Inside Apps: действие клиента\n" + order.id +
+      "\nTelegram ID: " + userId + "\n" + actionName
   });
   for (const message of messages) {
     try {
