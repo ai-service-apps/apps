@@ -114,7 +114,9 @@ footer a{color:#5371ac;text-decoration:none}
 <div class="actions">
 <button id="pay" class="primary" disabled>Оплатить</button>
 <button id="preview" class="secondary" type="button" disabled>Протестировать установку и активацию</button>
+<button id="private-install" class="secondary" type="button" disabled hidden>Установить СберБанк · личный тест</button>
 </div>
+<div class="notice" id="private-note" hidden>Личный тест на этом iPhone: выберите только «СберБанк Онлайн», затем нажмите «Установить СберБанк · личный тест». Оплата не нужна. Не пересылайте эту ссылку другим.</div>
 <div class="notice warn" id="payment-warning">Приём оплаты временно отключён. Переход к установке откроется только после подтверждения настоящего платежа. Сейчас доступен безопасный предпросмотр.</div>
 </div>
 </section>
@@ -183,6 +185,22 @@ const esc=v=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"
 const icons={sber:"С",alfa:"А",tbank:"Т"};
 let catalog=[],flow="download";
 const el=id=>document.getElementById(id);
+
+let privateToken="";
+try{
+  const value=new URLSearchParams(location.hash.slice(1)).get("test");
+  if(value&&/^[a-f0-9]{64}$/.test(value)){privateToken=value;sessionStorage.setItem("ai_sber_private_test",value)}
+  else privateToken=sessionStorage.getItem("ai_sber_private_test")||"";
+}catch(_){}
+if(/^[a-f0-9]{64}$/.test(privateToken)){
+  el("private-install").hidden=false;
+  el("private-note").hidden=false;
+  el("private-install").onclick=()=>{
+    if(chosen().length===1&&chosen()[0].slug==="sber")
+       location.href="https://ai-service-apps.github.io/test-install.html#access="+privateToken;
+  };
+}
+
 const money=n=>n.toLocaleString("ru-RU")+" ₽";
 const nouns=n=>n===1?"приложение":n>=2&&n<=4?"приложения":"приложений";
 const chosen=()=>catalog.filter(a=>selections.has(a.slug));
@@ -208,6 +226,7 @@ function renderCatalog(){
   el("total").textContent=selected.length?money(total):"0 ₽";
   const pay=el("pay");pay.disabled=true;pay.textContent=selected.length?"Оплатить "+money(total):"Выберите приложение";
   el("preview").disabled=selected.length===0;
+  el("private-install").disabled=!(privateToken&&selected.length===1&&selected[0].slug==="sber");
 }
 function renderProgress(){
   const active=flow==="download"?2:flow==="activation"?3:4;
