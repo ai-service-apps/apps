@@ -3,101 +3,221 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f6f8fc">
-<title>Apple Inside Apps — установка приложений на iPhone</title>
-<meta name="description" content="Онлайн-оформление установки приложений на iPhone в Apple Inside. Оплата на сайте, установка и активация по инструкции.">
+<meta name="theme-color" content="#f5f7fc">
+<meta name="description" content="Apple Inside Apps — выбор приложений, оплата, установка и активация на iPhone.">
+<title>Apple Inside Apps — приложения для iPhone</title>
 <style>
-:root{--ink:#192337;--muted:#69768e;--line:#e4e9f2;--bg:#f6f8fc;--blue:#2659d8;--white:#fff}
+:root{--bg:#f5f7fc;--ink:#17223a;--muted:#76839c;--blue:#2859f5;--line:#e2e8f3}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}
-.wrapper{width:min(100%,960px);padding:0 18px 110px;margin:0 auto}
-header{height:84px;display:flex;align-items:center;justify-content:space-between}
-.identity{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.5px;font-size:18px}
-.logo{height:44px;width:44px;display:grid;place-items:center;border-radius:14px;color:white;background:#172641;font-size:15px;letter-spacing:-1px}
-.help{color:#41619c;font-size:12px;text-decoration:none;font-weight:650}
-.hero{background:linear-gradient(125deg,#1b2b4b,#284d93 75%,#5274bf);border-radius:25px;padding:32px 26px;color:white}
-.eyebrow{color:#bfd3ff;text-transform:uppercase;font-size:11px;font-weight:800;letter-spacing:1.5px}
-h1{font-size:clamp(28px,5vw,42px);line-height:1.12;max-width:640px;margin:17px 0 13px;letter-spacing:-1.4px}
-.hero p{line-height:1.6;color:#dce6fc;font-size:14px;max-width:560px;margin:0}
-.row-features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px;margin:15px 0 0}
-.feature{padding:17px;background:white;border:1px solid var(--line);border-radius:15px}
-.feature strong{font-size:13px;display:block}.feature span{font-size:12px;color:var(--muted);display:block;margin-top:7px;line-height:1.4}
-h2{font-size:22px;letter-spacing:-.6px;margin:31px 0 7px}
-.sub{font-size:13px;color:var(--muted);line-height:1.5;margin:0 0 15px}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.product{background:white;border:1px solid var(--line);border-radius:19px;padding:19px;display:flex;gap:13px;align-items:flex-start}
-.symbol{height:48px;width:48px;flex:none;background:#e5eeff;color:#1f4ca1;border-radius:15px;display:grid;place-items:center;font-size:21px;font-weight:800}
-.product-body{flex:1;min-width:0}.product h3{font-size:15px;letter-spacing:-.3px;margin:0 0 5px}
-.product .description{margin:0 0 13px;color:var(--muted);font-size:12px;line-height:1.5}
-.bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.price{font-weight:800;font-size:19px}.tag{font-size:10px;font-weight:750;color:#846e39;background:#fff4da;border-radius:7px;padding:7px 8px}
-.simple{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.step{border:1px solid var(--line);border-radius:15px;background:white;padding:17px}
-.step .num{font-size:11px;color:var(--blue);font-weight:800}.step strong{display:block;font-size:13px;margin:10px 0 5px}
-.step p{margin:0;color:var(--muted);line-height:1.5;font-size:12px}
-.legal{border-radius:15px;background:#ecf1fc;color:#506687;font-size:12px;line-height:1.65;padding:17px;margin:23px 0}
-.foot{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;color:#7f8ca2;font-size:12px;line-height:1.8}.foot a{color:#4968a0}
-.cta{position:fixed;bottom:0;left:0;right:0;border-top:1px solid var(--line);background:rgba(255,255,255,.97);backdrop-filter:blur(10px);padding:12px max(18px,calc((100% - 924px)/2)) calc(12px + env(safe-area-inset-bottom))}
-.cta-inner{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.cta strong{font-size:16px}.cta small{display:block;color:var(--muted);font-size:11px;margin-top:4px}
-button{border:0;background:#a4b2cf;color:white;font-size:13px;font-weight:780;padding:13px 18px;border-radius:12px;cursor:not-allowed;min-width:160px}
-button:disabled{opacity:1}
-#state{margin-top:14px;font-size:12px;color:#637595;line-height:1.55}
-@media(max-width:650px){.grid{grid-template-columns:1fr}.hero{padding:25px 22px}.row-features,.simple{gap:7px}.feature,.step{padding:12px}.feature strong,.step strong{font-size:12px}.feature span,.step p{font-size:11px}.wrapper{padding-left:14px;padding-right:14px}.cta{padding-left:14px;padding-right:14px}}
+body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input{font:inherit}button{cursor:pointer}
+.wrap{max-width:900px;padding:0 18px 122px;margin:auto}
+header{height:86px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;gap:11px;align-items:center;font-weight:850;font-size:19px;letter-spacing:-.5px}
+.logo{width:44px;height:44px;background:#172540;color:#fff;border-radius:14px;display:grid;place-items:center;font-size:16px;letter-spacing:-1px}
+.help-link{font-size:12px;text-decoration:none;color:#4164a5;font-weight:700}
+.hero{background:linear-gradient(118deg,#162740,#274c98 65%,#456ed8);border-radius:24px;padding:30px 26px;color:#fff}
+.hero .eyebrow{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;font-weight:800;color:#b9d0ff}
+.hero h1{font-size:clamp(28px,5vw,42px);letter-spacing:-1px;line-height:1.13;margin:15px 0 12px;max-width:700px}
+.hero p{font-size:14px;line-height:1.55;color:#d6e2ff;margin:0;max-width:540px}
+.progress{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:16px 0 28px}
+.progress div{min-width:0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px}
+.progress span{display:block;color:#7185b0;font-weight:800;font-size:10px;margin-bottom:6px}
+.progress strong{display:block;font-size:12px;line-height:1.3}
+.progress .on{background:#eaf0ff;border-color:#8faaff}
+.progress .done{background:#eaf7ef;border-color:#b8e0c9}
+h2{font-size:22px;letter-spacing:-.6px;margin:0 0 7px}
+.sub{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 18px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.app-card{width:100%;border:1px solid var(--line);background:#fff;border-radius:18px;padding:17px;display:flex;align-items:center;text-align:left;gap:14px;min-height:107px;cursor:pointer}
+.app-card.selected{border:2px solid #648cfb;padding:16px;background:#fbfcff}
+.symbol{flex:none;width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:22px;font-weight:850;color:#fff;background:#366ae8}
+.symbol.alfa{background:#df3b52}.symbol.tbank{background:#f2cd3a;color:#392e0a}
+.details{flex:1;min-width:0}.details strong{display:block;font-size:15px}
+.details small{display:block;color:var(--muted);font-size:12px;line-height:1.35;margin-top:5px}
+.details b{display:inline-block;background:#f0f3fa;padding:6px 9px;border-radius:7px;font-size:11px;margin-top:8px}
+.check{width:28px;height:28px;border:1px solid #d7e0ef;border-radius:9px;display:grid;place-items:center;color:#8090ad;background:#fff;font-size:18px;flex:none}
+.selected .check{background:var(--blue);border-color:var(--blue);color:white}
+.empty{padding:22px;border:1px solid var(--line);border-radius:16px;background:#fff;color:var(--muted);font-size:13px}
+.summary{margin-top:19px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:19px}
+.summary-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.summary-head strong{font-size:15px}.summary-head span{font-size:12px;color:var(--muted)}
+.summary-items{font-size:12px;color:#4d5c7a;line-height:1.6;margin:12px 0;min-height:19px}
+.summary-row{border-top:1px solid var(--line);padding:15px 0 2px;display:flex;justify-content:space-between;align-items:center}
+.summary-row span{font-size:13px;color:var(--muted)}.summary-row strong{font-size:23px}
+.actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.primary,.secondary{border:0;border-radius:12px;padding:14px 18px;font-size:13px;font-weight:800;line-height:1.35}
+.primary{background:var(--blue);color:#fff}
+.primary:disabled{background:#a7b8df;color:#fff;cursor:not-allowed}
+.secondary{background:#eef2fb;color:#35569c}
+.notice{padding:14px 16px;border-radius:12px;background:#ebf1fd;color:#516c98;font-size:12px;line-height:1.6;margin-top:16px}
+.notice.warn{background:#fff7e7;color:#906c28}
+.preview{display:none}
+.preview.visible,.store.visible{display:block}
+.store.hidden{display:none}
+.order-demo{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px}
+.label{color:#4f70b0;background:#eaf0ff;font-size:10px;font-weight:800;padding:7px 10px;border-radius:8px;display:inline-block}
+.order-demo h2{margin-top:15px}
+.download-card{border:1px solid var(--line);background:#f8faff;border-radius:14px;padding:18px;margin-top:17px;display:flex;align-items:center;gap:14px}
+.download-card strong{font-size:14px}.download-card small{display:block;color:var(--muted);font-size:12px;margin-top:6px}
+.download-icon{width:44px;height:44px;border-radius:13px;background:#e5edff;display:grid;place-items:center;font-size:20px}
+.account-box{background:#f3f6fd;border-radius:14px;padding:16px;margin-top:15px}
+.account-box strong{font-size:13px}.account-box p{font-size:12px;color:#647490;line-height:1.65;margin:7px 0 0}
+.manual{font-size:13px;color:#5d6e8e;line-height:1.75}
+.manual strong{color:var(--ink)}
+footer{margin-top:29px;padding-top:17px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);display:flex;gap:17px;justify-content:space-between;line-height:1.7}
+footer a{color:#5371ac;text-decoration:none}
+@media(max-width:650px){.wrap{padding:0 14px 70px}.hero{padding:24px 20px}.grid{grid-template-columns:1fr}.progress{gap:5px}.progress div{padding:9px 6px}.progress strong{font-size:10px}.progress span{font-size:9px}.actions{flex-direction:column}.actions button{width:100%}.order-demo{padding:19px}footer{flex-direction:column;gap:8px}}
 </style>
 </head>
 <body>
-<div class="wrapper">
+<div class="wrap">
 <header>
-<div class="identity"><div class="logo">AI</div><span>Apple Inside Apps</span></div>
-<a class="help" href="https://service-ai.ru/" target="_blank" rel="noopener">О сервисе ↗</a>
+<div class="brand"><div class="logo">AI</div><span>Apple Inside Apps</span></div>
+<a class="help-link" href="contacts.html">Поддержка ↗</a>
 </header>
-<main>
-<section class="hero"><div class="eyebrow">Установка приложений для iPhone</div><h1>Ваши приложения — без визита в сервис</h1><p>Выбирайте нужное приложение, оплачивайте на отдельном сайте и получайте проверенную инструкцию по установке и активации.</p></section>
-<div class="row-features">
-<div class="feature"><strong>500 ₽</strong><span>За одно приложение</span></div>
-<div class="feature"><strong>Удалённо</strong><span>Без компьютера</span></div>
-<div class="feature"><strong>Поддержка</strong><span>При возникновении вопросов</span></div>
+<div class="store visible" id="store">
+<section class="hero">
+<div class="eyebrow">Приложения на iPhone</div>
+<h1>Выбрать. Оплатить. Установить.</h1>
+<p>Всё в одном процессе, без переписки с менеджером: выберите приложения, оплатите и следуйте шагам установки и активации.</p>
+</section>
+<div class="progress" aria-label="Этапы покупки">
+<div class="on"><span>01</span><strong>Выбор</strong></div>
+<div><span>02</span><strong>Оплата</strong></div>
+<div><span>03</span><strong>Скачать</strong></div>
+<div><span>04</span><strong>Активация</strong></div>
 </div>
-<h2>Каталог приложений</h2>
-<p class="sub">Первая версия сайта. Оплата откроется после подключения платёжной системы и проверки установочных файлов.</p>
-<div id="products" class="grid"><div class="product">Загружаем каталог...</div></div>
-<div id="state" role="status"></div>
-<h2>Как будет проходить заказ</h2>
-<div class="simple">
-<div class="step"><div class="num">01</div><strong>Оплата</strong><p>Карта или СБП через платёжную систему.</p></div>
-<div class="step"><div class="num">02</div><strong>Установка</strong><p>После подтверждения платежа выдаётся персональная ссылка.</p></div>
-<div class="step"><div class="num">03</div><strong>Активация</strong><p>Инструкция для «Контент и покупки», при необходимости помощь специалиста.</p></div>
+<section aria-label="Каталог">
+<h2>Выберите приложения</h2>
+<p class="sub">Можно отметить несколько приложений. Базовая цена — 500 ₽ за каждое. Пакетные скидки настроим позже.</p>
+<div id="catalog" class="grid"><div class="empty">Загружаем список...</div></div>
+<div class="summary" aria-live="polite">
+<div class="summary-head"><strong>Ваш выбор</strong><span id="count">0 приложений</span></div>
+<div class="summary-items" id="selection">Пока ничего не выбрано</div>
+<div class="summary-row"><span>Итого</span><strong id="total">0 ₽</strong></div>
+<div class="actions">
+<button id="pay" class="primary" disabled>Оплатить</button>
+<button id="preview" class="secondary" type="button">Посмотреть этапы после оплаты</button>
 </div>
-<div class="legal">Оплата пока не принимается. Перед запуском мы проверим совместимость, подлинность и допустимый способ распространения каждой версии приложения. Пароли Apple Account и коды подтверждения на этой странице не запрашиваются.</div>
-</main>
-<footer class="foot"><span>Apple Inside Service<br>Анапа, ул. Ленина, 173А, корпус 4<br><a href="contacts.html">Контакты</a></span><span>Поддержка: <a href="tel:+79384322202">+7 938 432-22-02</a><br>
-<a href="terms.html">Условия оказания услуг</a><br><a href="payment.html">Оплата и возвраты</a><br><a href="privacy.html">Обработка персональных данных</a></span></footer>
+<div class="notice warn" id="payment-warning">Приём оплаты временно отключён. Переход к установке откроется только после подтверждения настоящего платежа. Сейчас доступен безопасный предпросмотр.</div>
 </div>
-<div class="cta"><div class="cta-inner"><div><strong>Оплата пока недоступна</strong><small>После подключения эквайринга</small></div><button type="button" disabled>Перейти к оплате</button></div></div>
+</section>
+</div>
+<div id="postpayment" class="preview" aria-label="Предпросмотр шагов после оплаты">
+<div class="progress" id="preview-progress">
+<div class="done"><span>01</span><strong>Выбор</strong></div>
+<div class="done"><span>02</span><strong>Оплата</strong></div>
+<div class="on"><span>03</span><strong>Скачать</strong></div>
+<div><span>04</span><strong>Активация</strong></div>
+</div>
+<div class="order-demo">
+<span class="label">ДЕМОНСТРАЦИЯ · БЕЗ СПИСАНИЯ ДЕНЕГ</span>
+<div id="download-stage">
+<h2>Скачать приложения</h2>
+<p class="sub">После подтверждения реальной оплаты здесь автоматически появятся кнопки установки выбранных приложений.</p>
+<div id="download-list"></div>
+<button class="primary" type="button" disabled style="margin-top:15px;width:100%">Установить на iPhone · после оплаты</button>
+<div class="notice">Ссылки не выдаются по факту открытия этой страницы. Сначала сервер должен подтвердить действующий платёж и право на установку.</div>
+<div class="actions"><button type="button" id="next-stage" class="secondary">Посмотреть этап активации →</button></div>
+</div>
+<div id="activation-stage" hidden>
+<h2>Активация приложения</h2>
+<p class="sub">После установки следуйте инструкции для выбранного приложения.</p>
+<div class="account-box"><strong>Apple Account для «Контент и покупки»</strong>
+<p>Данные для активации доступны только после подтверждения заказа и разрешённого способа установки. В демонстрации они не выдаются. Вход и коды подтверждения выполняются непосредственно на устройстве.</p></div>
+<p class="manual"><strong>1.</strong> Откройте «Настройки» на iPhone.<br>
+<strong>2.</strong> Нажмите на своё имя → «Контент и покупки».<br>
+<strong>3.</strong> При необходимости выполните вход в учётную запись, использование которой вам разрешено.<br>
+<strong>4.</strong> Подтвердите вход на доверенном устройстве. Не передавайте пароль или код третьим лицам.<br>
+<strong>5.</strong> Откройте установленное приложение и проверьте работу.</p>
+<div class="notice">Невозможно автоматически ввести Apple Account и код двухфакторной проверки на iPhone через обычный веб-сайт. Этот этап требует действий владельца устройства.</div>
+<div class="actions"><button class="secondary" type="button" id="back-stage">← Назад к установке</button></div>
+</div>
+<div class="actions"><button class="secondary" type="button" id="back-shop">Вернуться в каталог</button></div>
+</div>
+</div>
+<footer>
+<span>Apple Inside Service · Анапа, ул. Ленина, 173А, корпус 4<br>Поддержка: <a href="tel:+79384322202">+7 938 432-22-02</a></span>
+<span><a href="terms.html">Условия</a> · <a href="payment.html">Оплата и возвраты</a> · <a href="privacy.html">Персональные данные</a> · <a href="contacts.html">Контакты</a></span>
+</footer>
+</div>
 <script>
-(function() {
-  "use strict";
-  const API = "https://cmcfwkfhyxfljpowbkpj.supabase.co/functions/v1/apps-orders";
-  const safe = v => String(v).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-  async function load() {
-    try {
-      const response = await fetch(API, {cache:"no-store"});
-      if (!response.ok) throw Error("server unavailable");
-      const data = await response.json();
-      if (!data.ok || !Array.isArray(data.apps)) throw Error("catalog unavailable");
-      const icons = {sber:"С",alfa:"А",tbank:"Т",other:"+"};
-      document.getElementById("products").innerHTML = data.apps.filter(a=>a.slug!=="other").map(a => {
-        const price = Number.isInteger(a.price_rub) && a.price_rub>0 ? a.price_rub.toLocaleString("ru-RU")+" ₽" : "Цена уточняется";
-        return '<article class="product"><div class="symbol">'+safe(icons[a.slug]||"●")+'</div><div class="product-body"><h3>'+safe(a.title)+'</h3><p class="description">'+safe(a.description||"Установка на iPhone")+'</p><div class="bottom"><span class="price">'+safe(price)+'</span><span class="tag">Ожидает запуска</span></div></div></article>'
-      }).join("");
-      document.getElementById("state").textContent = "";
-    } catch (_) {
-      document.getElementById("products").innerHTML = '<div class="product">Каталог временно не загружается. Попробуйте позже.</div>';
-      document.getElementById("state").textContent = "Не удалось получить данные. Оплата отключена.";
-    }
+(function(){
+"use strict";
+const api="https://cmcfwkfhyxfljpowbkpj.supabase.co/functions/v1/apps-orders";
+const catalogEl=document.getElementById("catalog");
+const selections=new Set();
+const esc=value=>String(value).replace(/[&<>"']/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[x]));
+const icons={sber:"С",alfa:"А",tbank:"Т"};
+let catalog=[];
+let stage="download";
+function money(n){return n.toLocaleString("ru-RU")+" ₽"}
+function nouns(n){return n===1?"приложение":n>=2&&n<=4?"приложения":"приложений"}
+function chosen(){return catalog.filter(a=>selections.has(a.slug))}
+function draw(){
+  catalogEl.innerHTML=catalog.length?catalog.map(app=>{
+    const picked=selections.has(app.slug),price=app.price_rub;
+    const ready=Number.isInteger(price)&&price>0;
+    return '<button type="button" class="app-card'+(picked?' selected':'')+'" data-select="'+esc(app.slug)+'" aria-pressed="'+picked+'">'+
+    '<span class="symbol '+esc(app.slug)+'">'+esc(icons[app.slug]||"•")+'</span>'+
+    '<span class="details"><strong>'+esc(app.title)+'</strong><small>'+esc(app.description||"Для iPhone")+'</small>'+
+    '<b>'+(ready?money(price):"Стоимость уточняется")+'</b></span><span class="check">'+(picked?"✓":"+")+'</span></button>';
+  }).join(""):'<div class="empty">Приложения временно недоступны. Повторите попытку позже.</div>';
+  Array.from(catalogEl.querySelectorAll("[data-select]")).forEach(b=>{
+    b.onclick=()=>{
+      const slug=b.getAttribute("data-select");
+      if(selections.has(slug))selections.delete(slug);else selections.add(slug);
+      draw();
+    };
+  });
+  const picked=chosen(),total=picked.reduce((n,a)=>n+(Number.isInteger(a.price_rub)?a.price_rub:0),0);
+  document.getElementById("count").textContent=picked.length+" "+nouns(picked.length);
+  document.getElementById("selection").textContent=picked.length?picked.map(a=>a.title).join(", "):"Пока ничего не выбрано";
+  document.getElementById("total").textContent=picked.length?money(total):"0 ₽";
+  const pay=document.getElementById("pay");
+  pay.textContent=picked.length?"Оплатить "+money(total):"Выберите приложение";
+  pay.disabled=true; // Payment provider intentionally NOT connected; no automatic unlock.
+}
+function changeStage(next){
+  stage=next;
+  document.getElementById("download-stage").hidden=next!=="download";
+  document.getElementById("activation-stage").hidden=next!=="activation";
+  const cells=Array.from(document.querySelectorAll("#preview-progress > div"));
+  cells.forEach((el,i)=>{el.className=i<(next==="download"?2:3)?"done":i===(next==="download"?2:3)?"on":""});
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+document.getElementById("preview").onclick=()=>{
+  const items=chosen();
+  document.getElementById("download-list").innerHTML=items.length?items.map(a=>
+    '<div class="download-card"><div class="download-icon">↓</div><div><strong>'+esc(a.title)+'</strong><small>Установка будет доступна после подтверждения оплаты и проверки файла</small></div></div>'
+  ).join(""):'<div class="empty">Сначала выберите приложение в каталоге, чтобы увидеть его на экране установки.</div>';
+  document.getElementById("store").className="store hidden";
+  document.getElementById("postpayment").className="preview visible";
+  changeStage("download");
+};
+document.getElementById("next-stage").onclick=()=>changeStage("activation");
+document.getElementById("back-stage").onclick=()=>changeStage("download");
+document.getElementById("back-shop").onclick=()=>{
+  document.getElementById("postpayment").className="preview";
+  document.getElementById("store").className="store visible";
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+async function load(){
+  try{
+    const r=await fetch(api,{cache:"no-store"});
+    if(!r.ok)throw Error("Каталог временно недоступен");
+    const j=await r.json();
+    if(!j.ok||!Array.isArray(j.apps))throw Error("Каталог временно недоступен");
+    catalog=j.apps.filter(a=>a.slug!=="other"&&typeof a.slug==="string"&&typeof a.title==="string");
+  }catch(e){
+    catalog=[];
+    document.getElementById("payment-warning").textContent="Каталог сейчас не загружается. Оплата отключена. Вернитесь позже.";
   }
-  load();
+  draw();
+}
+draw();
+load();
 })();
 </script>
 </body>
