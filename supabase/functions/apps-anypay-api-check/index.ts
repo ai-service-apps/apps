@@ -21,21 +21,40 @@ Deno.serve(async(req:Request)=>{
   });
   if(!claim.ok)return json({error:"PROBE_LOCK_UNAVAILABLE"},503);
   if(await claim.json()!==true)return json({ok:false,api_configured:true,rate_limited:true,message:"Повторная проверка доступна не чаще одного раза в 5 минут."},429);
-  const sign=await digest("payments"+apiId+MERCHANT_ID+apiKey);
-  const url=new URL("https://anypay.io/api/payments/"+encodeURIComponent(apiId));
-  url.searchParams.set("project_id",MERCHANT_ID);
+  // Authentication health check uses AnyPay's dedicated READ-ONLY balance API.
+  // An empty payment list is legitimate and must not be mistaken for bad credentials.
+  // SHA256("balance" + API_ID + API_KEY) is the published API scheme.
+  const sign=await digest("balance"+apiId+apiKey);
+  const url=new URL("https://anypay.io/api/balance/"+encodeURIComponent(apiId));
   url.searchParams.set("sign",sign);
   const remote=await fetch(url.toString(),{method:"GET",redirect:"error",signal:AbortSignal.timeout(7000),
-   headers:{"accept":"application/json"},cache:"no-store"});
+    headers:{"accept":"application/json"},cache:"no-store"});
   if(!remote.ok)return json({ok:false,api_configured:true,api_authenticated:false,provider_http_status:remote.status,error:"PROVIDER_HTTP_ERROR"},502);
   const raw=await remote.text();
-  if(raw.length>500000)return json({ok:false,api_configured:true,api_authenticated:false,error:"UNEXPECTED_PROVIDER_RESPONSE"},502);
+  if(raw.length>100000)return json({ok:false,api_configured:true,api_authenticated:false,error:"UNEXPECTED_PROVIDER_RESPONSE"},502);
   let parsed:any;try{parsed=JSON.parse(raw)}catch(_){return json({ok:false,api_configured:true,api_authenticated:false,error:"PROVIDER_NOT_JSON"},502)}
-  const data=parsed?.result;
-  const valid=parsed?.error==null&&data&&typeof data==="object"&&!Array.isArray(data)&&
-    (Array.isArray(data.payments)||(data.payments!==null&&typeof data.payments==="object"));
-  // No data from the provider is ever forwarded to the public requester.
-  if(!valid)return json({ok:false,api_configured:true,api_authenticated:false,error:"PROVIDER_REJECTED_OR_UNEXPECTED_SCHEMA"},502);
-  return json({ok:true,merchant_id:MERCHANT_ID,api_configured:true,api_authenticated:true,read_only:true,payments_enabled:false});
+  // Return only a limited, allow-listed error code and response structure.
+  // Never forward account balance, payment records, error messages, API keys.
+  const errorCode=parsed?.error&&typeof parsed.error==="object"?parsed.error.code:null;
+  const sanitizedCode=typeof errorCode==="number"&&Number.isInteger(errorCode)&&errorCode>=1&&errorCode<=99999?errorCode:
+    typeof errorCode==="string"&&/^[0-9]{1,5}$/.test(errorCode)?errorCode:null;
+  if(parsed?.error!=null)return json({ok:false,api_configured:true,api_authenticated:false,
+    error:"PROVIDER_REJECTED_CREDENTIALS_OR_REQUEST",...(sanitizedCode!=null?{provider_error_code:sanitizedCode}:{})},502);
+  const result=parsed?.result;
+  // An account may have zero funds; zero is still a valid response.
+  const balance=(result&&typeof result==="object"&&!Array.isArray(result))?result.balance:undefined;
+  const balanceIsValid=
+    (typeof balance==="number"&&Number.isFinite(balance)&&balance>=0)||
+    (typeof balance==="string"&&/^\d+(?:\.\d{1,8})?$/.test(balance))||
+    (balance&&typeof balance==="object"&&!Array.isArray(balance)&&Object.keys(balance).length<=100);
+  if(!balanceIsValid)return json({ok:false,api_configured:true,api_authenticated:false,
+    error:"BALANCE_RESPONSE_SCHEMA_UNEXPECTED",
+    response_structure:{
+      top_level_result_type:result===null?"null":Array.isArray(result)?"array":typeof result,
+      result_has_balance:balance!==undefined,
+      balance_type:balance===null?"null":Array.isArray(balance)?"array":typeof balance
+    }},502);
+  return json({ok:true,merchant_id:MERCHANT_ID,api_configured:true,api_authenticated:true,
+    verification_method:"signed_read_only_balance",read_only:true,payments_enabled:false});
  }catch(_){return json({ok:false,api_configured:true,api_authenticated:false,error:"PROVIDER_UNREACHABLE"},503)}
 });
