@@ -10,7 +10,7 @@ async function digest(x:string){
 Deno.serve(async(req:Request)=>{
  if(req.method!=="GET")return json({error:"METHOD_NOT_ALLOWED"},405);
  const apiId=Deno.env.get("ANYPAY_API_ID")?.trim(),apiKey=Deno.env.get("ANYPAY_API_KEY")?.trim();
- if(!apiId||!apiKey)return json({ok:false,api_configured:false,api_authenticated:false,error:"API_CREDENTIALS_MISSING"},503);
+ if(!apiId||!apiKey)return json({ok:false,api_configured:false,api_authenticated:false,error:"API_CREDENTIALS_MISSING",missing_secret_names:[...(!apiId?["ANYPAY_API_ID"]:[]),...(!apiKey?["ANYPAY_API_KEY"]:[])]},503);
  if(!/^[a-zA-Z0-9_-]{8,96}$/.test(apiId))return json({ok:false,api_configured:true,api_authenticated:false,error:"INVALID_API_ID_FORMAT"},503);
  const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),base=Deno.env.get("SUPABASE_URL");
  if(!serviceKey||!base)return json({error:"SERVER_UNAVAILABLE"},503);
