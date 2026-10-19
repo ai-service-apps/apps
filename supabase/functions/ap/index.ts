@@ -110,6 +110,22 @@ Deno.serve(async (req: Request) => {
   // exact price and currency match, status === "paid", test === "0",
   // transaction_id is unique, and payment belongs to this project.
   // Then perform an idempotent transaction BEFORE replying with "OK".
-  if (status !== "paid" || test !== "0") return json({error:"NOT_REAL_COMPLETED_PAYMENT"},409);
+  // AnyPay test tool sends signed `test=1` notifications. Acknowledge only a
+  // correctly signed, paid-status simulation with plain "OK" as AnyPay requires.
+  // NEVER create an order, set paid_at, or release app files for test traffic.
+  if (test === "1" && status === "paid") {
+    return new Response("OK", {
+      status: 200,
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  }
+  if (status !== "paid" || test !== "0")
+    return json({error:"NOT_REAL_COMPLETED_PAYMENT"},409);
+  // Real notifications are still disabled until a verified, idempotent
+  // checkout/payment-intent ledger is implemented.
   return json({error:"ORDER_LEDGER_NOT_CONFIGURED"},503);
 });
