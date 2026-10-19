@@ -114,6 +114,35 @@ Deno.serve(async (req: Request) => {
   // correctly signed, paid-status simulation with plain "OK" as AnyPay requires.
   // NEVER create an order, set paid_at, or release app files for test traffic.
   if (test === "1" && status === "paid") {
+    // Record the signed AnyPay simulation exactly once. It is never a paid order.
+    // The test flag is NOT covered by the AnyPay signature, so we do not use
+    // this audit as evidence for a real payment.
+    const dbUrl = Deno.env.get("SUPABASE_URL");
+    const dbKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!dbUrl || !dbKey) return json({error:"AUDIT_NOT_CONFIGURED"},503);
+    const fingerprint = await sha256Hex([
+      merchantId,currency,Number(amount).toFixed(2),payId,status,
+      signature.toLowerCase(),"test=1"
+    ].join("|"));
+    try {
+      const response = await fetch(dbUrl+
+        "/rest/v1/web_app_payment_events?on_conflict=notification_fingerprint",{
+        method:"POST",
+        headers:{
+          apikey:dbKey,Authorization:"Bearer "+dbKey,
+          "Content-Type":"application/json",
+          Prefer:"resolution=ignore-duplicates,return=minimal"
+        },
+        body:JSON.stringify({
+          merchant_id:Number(merchantId),
+          merchant_order_no:Number(payId),
+          currency,amount_rub:Number(amount),provider_status:status,
+          is_test:true,signature_valid:true,confirmed_with_provider:false,
+          notification_fingerprint:fingerprint
+        })
+      });
+      if(!response.ok)return json({error:"TEST_AUDIT_UNAVAILABLE"},503);
+    }catch(_){return json({error:"TEST_AUDIT_UNAVAILABLE"},503)}
     return new Response("OK", {
       status: 200,
       headers: {
