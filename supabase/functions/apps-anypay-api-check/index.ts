@@ -12,6 +12,13 @@ Deno.serve(async(req:Request)=>{
  const apiId=Deno.env.get("ANYPAY_API_ID")?.trim(),apiKey=Deno.env.get("ANYPAY_API_KEY")?.trim();
  if(!apiId||!apiKey)return json({ok:false,api_configured:false,api_authenticated:false,error:"API_CREDENTIALS_MISSING",missing_secret_names:[...(!apiId?["ANYPAY_API_ID"]:[]),...(!apiKey?["ANYPAY_API_KEY"]:[])]},503);
  if(!/^[a-zA-Z0-9_-]{8,96}$/.test(apiId))return json({ok:false,api_configured:true,api_authenticated:false,error:"INVALID_API_ID_FORMAT"},503);
+ // Detect accidental copying of masked stars from AnyPay's readonly password field.
+ // This examines secret bytes locally; neither key values nor lengths are disclosed.
+ if(/[\u002a\u2022\u25cf\u00b7\u2026]/.test(apiKey))
+  return json({ok:false,api_configured:true,api_authenticated:false,error:"MASKED_API_KEY_SAVED_IN_SUPABASE"},503);
+ if(apiKey.length<16||apiKey.length>512)
+  return json({ok:false,api_configured:true,api_authenticated:false,error:"API_KEY_FORMAT_SUSPICIOUS"},503);
+
  const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),base=Deno.env.get("SUPABASE_URL");
  if(!serviceKey||!base)return json({error:"SERVER_UNAVAILABLE"},503);
  try{
