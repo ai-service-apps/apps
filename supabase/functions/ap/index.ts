@@ -154,7 +154,94 @@ Deno.serve(async (req: Request) => {
   }
   if (status !== "paid" || test !== "0")
     return json({error:"NOT_REAL_COMPLETED_PAYMENT"},409);
-  // Real notifications are still disabled until a verified, idempotent
-  // checkout/payment-intent ledger is implemented.
-  return json({error:"ORDER_LEDGER_NOT_CONFIGURED"},503);
+  // A real callback is NEVER sufficient to credit an order. Independently
+  // check a server-created unpaid order against AnyPay's read-only payments API.
+  // Unknown provider schema, missing transaction ID, or conflicting records
+  // => fail closed. This code has NO database payment-write path.
+  const apiId=Deno.env.get("ANYPAY_API_ID")?.trim();
+  const apiKey=Deno.env.get("ANYPAY_API_KEY")?.trim();
+  const dbUrl=Deno.env.get("SUPABASE_URL");
+  const dbKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if(!apiId||!apiKey||!dbUrl||!dbKey)
+    return json({error:"INDEPENDENT_VERIFICATION_NOT_CONFIGURED"},503);
+  if(!/^[A-Za-z0-9_-]{8,96}$/.test(apiId))
+    return json({error:"API_ID_INVALID"},503);
+  const dbHeaders={
+    apikey:dbKey,Authorization:"Bearer "+dbKey,"Accept":"application/json"
+  };
+  const numericId=Number(payId);
+  if(!Number.isSafeInteger(numericId)||numericId<1)return json({error:"INVALID_ORDER_ID"},400);
+  const cents=(s:string):bigint|null=>{
+    if(!/^\d{1,10}(?:\.\d{1,2})?$/.test(s))return null;
+    const [a,b=""]=s.split(".");
+    return BigInt(a)*100n+BigInt((b+"00").slice(0,2));
+  };
+  const expectedCents=cents(amount);
+  if(expectedCents===null)return json({error:"INVALID_AMOUNT"},400);
+
+  let internalOrder:any;
+  try{
+    const rowsRes=await fetch(dbUrl+"/rest/v1/web_app_orders?select=id,merchant_order_no,total_rub,currency,status,provider,paid_at,expires_at&merchant_order_no=eq."+numericId+"&limit=1",{
+      method:"GET",headers:dbHeaders,signal:AbortSignal.timeout(6000)
+    });
+    if(!rowsRes.ok)return json({error:"ORDER_LOOKUP_UNAVAILABLE"},503);
+    const rows=await rowsRes.json();
+    internalOrder=rows?.[0];
+  }catch(_){return json({error:"ORDER_LOOKUP_UNAVAILABLE"},503)}
+  if(!internalOrder||internalOrder.status!=="awaiting_payment"
+    ||internalOrder.provider!=="anypay"||internalOrder.paid_at!==null
+    ||Date.parse(internalOrder.expires_at)<=Date.now()
+    ||internalOrder.currency!=="RUB"
+    ||BigInt(internalOrder.total_rub)*100n!==expectedCents)
+    return json({error:"ORDER_NOT_PAYABLE_OR_AMOUNT_MISMATCH"},409);
+
+  const verifiedSign=await sha256Hex("payments"+apiId+PROJECT_ID+apiKey);
+  const providerURL=new URL("https://anypay.io/api/payments/"+encodeURIComponent(apiId));
+  providerURL.searchParams.set("project_id",PROJECT_ID);
+  providerURL.searchParams.set("sign",verifiedSign);
+  let providerRows:any[];
+  try{
+    const res=await fetch(providerURL.toString(),{
+      method:"GET",redirect:"error",signal:AbortSignal.timeout(7000),
+      cache:"no-store",headers:{"Accept":"application/json"}
+    });
+    if(!res.ok)return json({error:"PROVIDER_VERIFICATION_UNAVAILABLE"},503);
+    const raw=await res.text();
+    if(raw.length>500000)return json({error:"PROVIDER_RESPONSE_TOO_LARGE"},503);
+    const decoded=JSON.parse(raw);
+    const collection=decoded?.result?.payments;
+    if(decoded?.error!=null||!collection||typeof collection!=="object")
+      return json({error:"PROVIDER_SCHEMA_UNCONFIRMED"},503);
+    providerRows=Array.isArray(collection)?collection:Object.values(collection);
+    if(providerRows.length>10000)return json({error:"PROVIDER_RESULT_TOO_LARGE"},503);
+  }catch(_){return json({error:"PROVIDER_VERIFICATION_UNAVAILABLE"},503)}
+  const matches=providerRows.filter(v=>
+    v&&typeof v==="object"&&String(v.pay_id)===String(numericId));
+  if(matches.length!==1)return json({error:"PAYMENT_NOT_CONFIRMED_IN_PROVIDER"},503);
+  const payment=matches[0];
+  // Require all critical fields, including a stable unique provider record ID.
+  // If AnyPay changes its API schema, this deliberately rejects the event.
+  const txn=String(payment.id??"");
+  const txnMoney=cents(String(payment.amount??""));
+  if(!/^[A-Za-z0-9_-]{1,96}$/.test(txn)
+    || payment.status!=="paid"
+    || payment.currency!=="RUB"
+    || txnMoney===null||txnMoney!==expectedCents
+    || (payment.project_id!=null&&String(payment.project_id)!==PROJECT_ID)
+    || (payment.test!=null&&String(payment.test)!=="0"))
+    return json({error:"PROVIDER_PAYMENT_MISMATCH"},503);
+  // Confirm items sum too; the internal server must have priced this order.
+  try{
+    const ir=await fetch(dbUrl+"/rest/v1/web_app_order_items?select=unit_price_rub&order_id=eq."+internalOrder.id,{
+      headers:dbHeaders,signal:AbortSignal.timeout(6000)
+    });
+    if(!ir.ok)return json({error:"ORDER_LINES_UNAVAILABLE"},503);
+    const items=await ir.json();
+    const total=items.reduce((s:number,x:any)=>s+Number(x.unit_price_rub),0);
+    if(!items.length||!Number.isSafeInteger(total)||total!==internalOrder.total_rub)
+      return json({error:"ORDER_LINES_MISMATCH"},409);
+  }catch(_){return json({error:"ORDER_LINES_UNAVAILABLE"},503)}
+  // Independent verification exists; atomic real settlement remains locked
+  // pending provider test, rights review, and controlled production enablement.
+  return json({error:"REAL_PAYMENT_SETTLEMENT_DISABLED"},503);
 });
