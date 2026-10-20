@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 // Apple Inside Apps — single invitation-only owner pilot for 500 RUB.
 // Payment link is signed server-side from a pre-created order. Never marks paid,
 // publishes IPA files, or exposes Apple Account credentials.
@@ -123,10 +124,10 @@ Deno.serve(async(req:Request)=>{
      return j({error:"PILOT_NOT_PAYABLE"},409);
   const secret=Deno.env.get("ANYPAY_PROJECT_SECRET")?.trim();
   if(!secret)return j({error:"PROJECT_SECRET_MISSING"},503);
-  // AnyPay project's SHA256 SCI setting, separate from its API key:
-  // SHA256(currency:amount:project_secret:merchant_id:pay_id)
+  // AnyPay SCI payment-link signatures use MD5, NOT SHA256 (which is used for API requests).
+  // MD5(currency:amount:project_secret:merchant_id:pay_id). Keep exact amount formatting.
   const amount="500";
-  const sign=await digest(["RUB",amount,secret,PROJECT_ID,String(o.merchant_order_no)].join(":"));
+  const sign=createHash("md5").update(["RUB",amount,secret,PROJECT_ID,String(o.merchant_order_no)].join(":"),"utf8").digest("hex");
   const checkout=new URL(BASE);
   checkout.searchParams.set("merchant_id",PROJECT_ID);
   checkout.searchParams.set("pay_id",String(o.merchant_order_no));
