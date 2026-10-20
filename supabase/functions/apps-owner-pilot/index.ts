@@ -125,7 +125,7 @@ Deno.serve(async(req:Request)=>{
   if(!secret)return j({error:"PROJECT_SECRET_MISSING"},503);
   // AnyPay project's SHA256 SCI setting, separate from its API key:
   // SHA256(currency:amount:project_secret:merchant_id:pay_id)
-  const amount="500.00";
+  const amount="500";
   const sign=await digest(["RUB",amount,secret,PROJECT_ID,String(o.merchant_order_no)].join(":"));
   const checkout=new URL(BASE);
   checkout.searchParams.set("merchant_id",PROJECT_ID);
