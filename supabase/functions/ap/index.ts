@@ -209,10 +209,17 @@ Deno.serve(async (req: Request) => {
     const raw=await res.text();
     if(raw.length>500000)return json({error:"PROVIDER_RESPONSE_TOO_LARGE"},503);
     const decoded=JSON.parse(raw);
-    const collection=decoded?.result?.payments;
-    if(decoded?.error!=null||!collection||typeof collection!=="object")
+    const root=decoded?.result;
+    if(decoded?.error!=null||!root||typeof root!=="object"||Array.isArray(root)
+      || !Object.prototype.hasOwnProperty.call(root,"payments"))
       return json({error:"PROVIDER_SCHEMA_UNCONFIRMED"},503);
-    providerRows=Array.isArray(collection)?collection:Object.values(collection);
+    const collection=root.payments;
+    // For a new merchant AnyPay returns null when no payments exist.
+    // This is a valid empty history, NOT evidence of a paid transaction.
+    if(collection===null)providerRows=[];
+    else if(Array.isArray(collection))providerRows=collection;
+    else if(typeof collection==="object")providerRows=Object.values(collection);
+    else return json({error:"PROVIDER_SCHEMA_UNCONFIRMED"},503);
     if(providerRows.length>10000)return json({error:"PROVIDER_RESULT_TOO_LARGE"},503);
   }catch(_){return json({error:"PROVIDER_VERIFICATION_UNAVAILABLE"},503)}
   const matches=providerRows.filter(v=>
