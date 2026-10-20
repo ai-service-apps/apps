@@ -35,7 +35,7 @@ Deno.serve(async(req:Request)=>{
  try{b=await req.json()}catch(_){return j({error:"INVALID_JSON"},400)}
  const token=b?.token,action=b?.action;
  if(typeof token!=="string"||!/^[a-f0-9]{64}$/.test(token)||
-   !["start","status","invoice"].includes(action))return j({error:"INVALID_REQUEST"},400);
+   !["start","status","verify","invoice"].includes(action))return j({error:"INVALID_REQUEST"},400);
  try{
   // The invitation is created by the owner in Supabase Secrets.
   // Neither the token nor the expected secret is ever returned to the browser.
@@ -75,6 +75,49 @@ Deno.serve(async(req:Request)=>{
     payment_verified:o.status==="paid"&&Boolean(o.paid_at),
     delivery_enabled:false,public_checkout_enabled:false};
   if(action==="status")return j(result);
+  if(action==="verify") {
+    const apiId=Deno.env.get("ANYPAY_API_ID")?.trim();
+    const apiKey=Deno.env.get("ANYPAY_API_KEY")?.trim();
+    if(!apiId||!apiKey||!/^[A-Za-z0-9_-]{8,96}$/.test(apiId))
+      return j({error:"PAYMENT_VERIFICATION_NOT_CONFIGURED"},503);
+    const signature=await digest("payments"+apiId+PROJECT_ID+apiKey);
+    const url=new URL("https://anypay.io/api/payments/"+encodeURIComponent(apiId));
+    url.searchParams.set("project_id",PROJECT_ID);
+    url.searchParams.set("sign",signature);
+    const remote=await fetch(url.toString(),{method:"GET",cache:"no-store",
+      redirect:"error",headers:{"Accept":"application/json"},signal:AbortSignal.timeout(7000)});
+    if(!remote.ok)return j({error:"PAYMENT_PROVIDER_UNAVAILABLE"},503);
+    const raw=await remote.text();
+    if(raw.length>500000)return j({error:"PAYMENT_PROVIDER_RESPONSE_TOO_LARGE"},503);
+    let parsed:any;try{parsed=JSON.parse(raw)}catch(_){return j({error:"PROVIDER_RESPONSE_INVALID"},503)}
+    if(parsed?.error!=null)return j({error:"PROVIDER_REJECTED_PAYMENT_QUERY"},503);
+    const payments=parsed?.result?.payments;
+    let records:any[]=[];
+    if(payments===null)records=[];
+    else if(Array.isArray(payments))records=payments;
+    else if(payments&&typeof payments==="object")records=Object.values(payments);
+    else return j({error:"PROVIDER_SCHEMA_UNVERIFIED"},503);
+    if(records.length>10000)return j({error:"PROVIDER_RESULT_TOO_LARGE"},503);
+    const matched=records.filter(p=>p&&typeof p==="object"&&
+      String(p.pay_id)===String(o.merchant_order_no));
+    if(matched.length>1)return j({error:"DUPLICATE_PAYMENT_RECORDS_REVIEW_REQUIRED"},503);
+    if(!matched.length)return j({...result,provider_payment_confirmed:false,
+      payment_check:"no_matching_transaction_yet"});
+    const payment=matched[0];
+    const paid=payment.status==="paid"&&payment.currency==="RUB"&&
+      /^500(?:\.0{1,8})?$/.test(String(payment.amount??""))&&
+      (payment.project_id==null||String(payment.project_id)===PROJECT_ID)&&
+      (payment.test==null||String(payment.test)==="0")&&
+      /^[A-Za-z0-9_-]{3,96}$/.test(String(payment.id??payment.trans_id??""));
+    if(!paid)return j({...result,provider_payment_confirmed:false,
+      payment_check:"payment_not_yet_paid_or_requires_review"});
+    // The single owner's real payment is independently visible in AnyPay,
+    // but we intentionally do not change local order.status before production
+    // provider schema and atomic-credit tests have been signed off.
+    return j({...result,provider_payment_confirmed:true,
+      payment_check:"provider_verified_manual_settlement_only",
+      delivery_enabled:false});
+  }
   if(o.status!=="awaiting_payment"||o.paid_at!==null)
      return j({error:"PILOT_NOT_PAYABLE"},409);
   const secret=Deno.env.get("ANYPAY_PROJECT_SECRET")?.trim();
