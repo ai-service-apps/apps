@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 // Apple Inside Apps — single invitation-only owner pilot for 500 RUB.
 // Payment link is signed server-side from a pre-created order. Never marks paid,
 // publishes IPA files, or exposes Apple Account credentials.
@@ -122,19 +121,68 @@ Deno.serve(async(req:Request)=>{
   }
   if(o.status!=="awaiting_payment"||o.paid_at!==null)
      return j({error:"PILOT_NOT_PAYABLE"},409);
-  const secret=Deno.env.get("ANYPAY_PROJECT_SECRET")?.trim();
-  if(!secret)return j({error:"PROJECT_SECRET_MISSING"},503);
-  // AnyPay SCI payment-link signatures use MD5, NOT SHA256 (which is used for API requests).
-  // MD5(currency:amount:project_secret:merchant_id:pay_id). Keep exact amount formatting.
+  // AnyPay's API creates the payment URL itself and avoids manual SCI signatures.
+  // Only one private 500 RUB owner pilot can use this endpoint. No crediting here.
+  const email=typeof b?.email==="string"?b.email.trim():"";
+  if(!/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,24}$/.test(email)
+     ||email.length>254)return j({error:"VALID_EMAIL_REQUIRED"},400);
+  const apiId=Deno.env.get("ANYPAY_API_ID")?.trim();
+  const apiKey=Deno.env.get("ANYPAY_API_KEY")?.trim();
+  if(!apiId||!apiKey||!/^[a-zA-Z0-9_-]{8,96}$/.test(apiId))
+    return j({error:"ANY_PAY_API_NOT_CONFIGURED"},503);
+  const sbUrl=Deno.env.get("SUPABASE_URL"),sbKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if(!sbUrl||!sbKey)return j({error:"SERVER_CONFIG_MISSING"},503);
+  const headers={"apikey":sbKey,"Authorization":"Bearer "+sbKey,
+                 "Content-Type":"application/json","Accept":"application/json"};
+  const existing=await db("web_app_pilot_invoices?select=payment_url&order_id=eq."+
+                          encodeURIComponent(o.id)+"&limit=1");
+  if(existing?.[0]?.payment_url)return j({...result,payment_url:existing[0].payment_url,
+    checkout_provider:"anypay_api",delivery_enabled:false});
+  const claim=await fetch(sbUrl+"/rest/v1/rpc/web_app_claim_pilot_invoice",{
+    method:"POST",headers,body:JSON.stringify({p_order_id:o.id}),signal:AbortSignal.timeout(5000)});
+  if(!claim.ok)return j({error:"INVOICE_RESERVATION_FAILED"},503);
+  if(await claim.json()!==true)return j({error:"INVOICE_CREATION_IN_PROGRESS_RETRY_LATER"},429);
   const amount="500";
-  const sign=createHash("md5").update(["RUB",amount,secret,PROJECT_ID,String(o.merchant_order_no)].join(":"),"utf8").digest("hex");
-  const checkout=new URL(BASE);
-  checkout.searchParams.set("merchant_id",PROJECT_ID);
-  checkout.searchParams.set("pay_id",String(o.merchant_order_no));
-  checkout.searchParams.set("amount",amount);
-  checkout.searchParams.set("currency","RUB");
-  checkout.searchParams.set("desc","Контрольная оплата услуги Apple Inside Apps");
-  checkout.searchParams.set("sign",sign);
-  return j({...result,payment_url:checkout.toString(),note:"Это реальная оплата 500 рублей. Возврат к пилоту не подтверждает оплату автоматически."});
+  const desc="Контрольная оплата Apple Inside Apps";
+  const method="card";
+  // AnyPay documented signing formula:
+  // sha256("create-payment"+apiId+projectId+payId+amount+currency+desc+method+apiKey).
+  const apiSign=await digest("create-payment"+apiId+PROJECT_ID+
+    String(o.merchant_order_no)+amount+"RUB"+desc+method+apiKey);
+  const u=new URL("https://anypay.io/api/create-payment/"+encodeURIComponent(apiId));
+  const params={project_id:PROJECT_ID,pay_id:String(o.merchant_order_no),
+    amount,currency:"RUB",desc,method,email,sign:apiSign};
+  for(const [k,v] of Object.entries(params))u.searchParams.set(k,v);
+  const response=await fetch(u.toString(),{method:"GET",redirect:"error",
+    headers:{"Accept":"application/json"},cache:"no-store",signal:AbortSignal.timeout(12000)});
+  if(!response.ok)return j({error:"PROVIDER_CREATE_PAYMENT_HTTP_ERROR",
+    provider_http_status:response.status},502);
+  const raw=await response.text();
+  if(raw.length>100000)return j({error:"PROVIDER_CREATE_PAYMENT_INVALID_SIZE"},502);
+  let payload:any;try{payload=JSON.parse(raw)}
+  catch(_){return j({error:"PROVIDER_CREATE_PAYMENT_NOT_JSON"},502)}
+  if(payload?.error!=null){
+    const value=payload?.error?.code;
+    const code=String(value??"");
+    return j({error:"PROVIDER_CREATE_PAYMENT_REJECTED",
+      ...( /^\d{1,5}$/.test(code)?{provider_error_code:code}:{} )},502);
+  }
+  const urlString=payload?.result?.payment_url;
+  if(typeof urlString!=="string")return j({error:"PROVIDER_PAYMENT_URL_MISSING"},502);
+  let checkout:URL;try{checkout=new URL(urlString)}catch(_){
+    return j({error:"PROVIDER_PAYMENT_URL_INVALID"},502);
+  }
+  if(checkout.protocol!=="https:"||checkout.hostname!=="anypay.io"||
+     checkout.username||checkout.password||urlString.length>2048)
+    return j({error:"PROVIDER_PAYMENT_URL_UNTRUSTED"},502);
+  const save=await fetch(sbUrl+"/rest/v1/web_app_pilot_invoices?order_id=eq."+
+    encodeURIComponent(o.id)+"&payment_url=is.null",{
+    method:"PATCH",headers:{...headers,Prefer:"return=representation"},
+    body:JSON.stringify({payment_url:urlString}),signal:AbortSignal.timeout(5000)});
+  if(!save.ok)return j({error:"INVOICE_SAVE_FAILED"},503);
+  const saved=await save.json();
+  if(!Array.isArray(saved)||saved.length!==1)return j({error:"INVOICE_SAVE_CONFLICT"},503);
+  return j({...result,payment_url:urlString,checkout_provider:"anypay_api",
+    note:"Реальная оплата 500 рублей. Возврат на сайт не подтверждает поступление денег."});
  }catch(_){return j({error:"PILOT_SERVICE_UNAVAILABLE"},503)}
 });
