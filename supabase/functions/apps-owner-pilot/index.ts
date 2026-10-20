@@ -40,8 +40,9 @@ Deno.serve(async(req:Request)=>{
   // The invitation is created by the owner in Supabase Secrets.
   // Neither the token nor the expected secret is ever returned to the browser.
   const expected=Deno.env.get("ANYPAY_PILOT_PASSPHRASE")?.trim();
-  if(!expected||!/^[a-f0-9]{64}$/.test(expected))
-    return j({error:"PILOT_INVITATION_NOT_CONFIGURED"},503);
+  if(!expected)return j({error:"PILOT_SECRET_NOT_LOADED"},503);
+  if(!/^[a-f0-9]{64}$/.test(expected))
+    return j({error:"PILOT_SECRET_INVALID_FORMAT"},503);
   const hash=await digest(token);
   const expectedHash=await digest(expected);
   let mismatch=0;
