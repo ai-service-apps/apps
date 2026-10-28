@@ -2,10 +2,12 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
+<base href="https://ai-service-apps.github.io/">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f5f7fc">
 <meta name="description" content="Apple Inside Apps — выбор приложений, оплата, установка и активация на iPhone.">
 <title>Apple Inside Apps — приложения для iPhone</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 :root{--bg:#f5f7fc;--ink:#17223a;--muted:#76839c;--blue:#2859f5;--line:#e2e8f3}
 *{box-sizing:border-box}
@@ -89,35 +91,37 @@ footer a{color:#5371ac;text-decoration:none}
 <div class="wrap">
 <header>
 <div class="brand"><div class="logo">AI</div><span>Apple Inside Apps</span></div>
-<a class="help-link" href="checkout/contacts.html">Поддержка ↗</a>
+<a class="help-link" href="contacts.html">Поддержка ↗</a>
 </header>
 <div class="store visible" id="store">
 <section class="hero">
 <div class="eyebrow">Приложения на iPhone</div>
-<h1>Выбрать. Оплатить. Установить.</h1>
-<p>Выберите приложения и проверьте процесс установки и активации без переписки с менеджером. Пока оплата не подключена, доступна демонстрация без списаний.</p>
+<h1>Выбрать. Установить. Проверить.</h1>
+<p>Попробуйте бесплатно установить СберБанк Онлайн на iPhone. Откройте сайт в Safari и следуйте инструкции. Оплата для этого не требуется.</p>
 </section>
-<div class="progress" aria-label="Этапы покупки">
+<div class="progress" aria-label="Этапы установки">
 <div class="on"><span>01</span><strong>Выбор</strong></div>
-<div><span>02</span><strong>Оплата</strong></div>
+<div><span>02</span><strong>Инструкция</strong></div>
 <div><span>03</span><strong>Скачать</strong></div>
 <div><span>04</span><strong>Активация</strong></div>
 </div>
 <section aria-label="Каталог">
 <h2>Выберите приложения</h2>
-<p class="sub">Можно отметить несколько приложений. Базовая цена — 500 ₽ за каждое. Пакетные скидки настроим позже.</p>
+<p class="sub">Для бесплатной установки выберите СберБанк Онлайн. Для остальных приложений пока доступна демонстрация процесса.</p>
 <div id="catalog" class="grid"><div class="empty">Загружаем список...</div></div>
 <div class="summary" aria-live="polite">
 <div class="summary-head"><strong>Ваш выбор</strong><span id="count">0 приложений</span></div>
 <div class="summary-items" id="selection">Пока ничего не выбрано</div>
 <div class="summary-row"><span>Итого</span><strong id="total">0 ₽</strong></div>
 <div class="actions">
-<button id="pay" class="primary" disabled>Оплатить</button>
+<button id="free-install" class="primary" type="button" disabled>Установить бесплатно</button>
+<button id="pay" class="secondary" disabled hidden>Оплатить</button>
 <button id="preview" class="secondary" type="button" disabled>Протестировать установку и активацию</button>
 <button id="private-install" class="secondary" type="button" disabled hidden>Установить СберБанк · личный тест</button>
 </div>
 <div class="notice" id="private-note" hidden>Личный тест на этом iPhone: выберите только «СберБанк Онлайн», затем нажмите «Установить СберБанк · личный тест». Оплата не нужна. Не пересылайте эту ссылку другим.</div>
-<div class="notice warn" id="payment-warning">Приём оплаты временно отключён. Переход к установке откроется только после подтверждения настоящего платежа. Сейчас доступен безопасный предпросмотр.</div>
+<div class="notice" id="free-note" role="status">Бесплатная установка доступна для СберБанк Онлайн. Выберите его в каталоге.</div>
+<div class="notice warn" id="payment-warning">Приём оплаты временно отключён. Бесплатная установка СберБанк Онлайн проходит без оплаты. Установочные файлы Альфа-Банка и Т-Банка пока не подключены.</div>
 </div>
 </section>
 </div>
@@ -171,13 +175,13 @@ footer a{color:#5371ac;text-decoration:none}
 </div>
 <footer>
 <span>Apple Inside Service · Анапа, ул. Ленина, 173А, корпус 4<br>Поддержка: <a href="tel:+79384322202">+7 938 432-22-02</a></span>
-<span><a href="checkout/terms.html">Условия</a> · <a href="checkout/payment.html">Оплата и возвраты</a> · <a href="checkout/privacy.html">Персональные данные</a> · <a href="checkout/contacts.html">Контакты</a></span>
+<span><a href="terms.html">Условия</a> · <a href="payment.html">Оплата и возвраты</a> · <a href="privacy.html">Персональные данные</a> · <a href="contacts.html">Контакты</a></span>
 </footer>
 </div>
 <script>
 (function(){
 "use strict";
-const api="https://cmcfwkfhyxfljpowbkpj.supabase.co/functions/v1/apps-orders";
+const api=location.hostname.endsWith(".netlify.app")?"/api/catalog":"https://cmcfwkfhyxfljpowbkpj.supabase.co/functions/v1/apps-orders";
 const catalogEl=document.getElementById("catalog");
 const selections=new Set();
 const simulatedInstalled=new Set();
@@ -185,6 +189,9 @@ const esc=v=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"
 const icons={sber:"С",alfa:"А",tbank:"Т"};
 let catalog=[],flow="download";
 const el=id=>document.getElementById(id);
+const tg=window.Telegram&&window.Telegram.WebApp;
+const inTelegram=Boolean(tg&&(tg.initData||(tg.platform&&tg.platform!=="unknown")));
+if(inTelegram){try{tg.ready();tg.expand()}catch(_){}}
 
 let privateToken="";
 try{
@@ -197,7 +204,7 @@ if(/^[a-f0-9]{64}$/.test(privateToken)){
   el("private-note").hidden=false;
   el("private-install").onclick=()=>{
     if(chosen().length===1&&chosen()[0].slug==="sber")
-       location.href="https://ai-service-apps.github.io/test-install.html#access="+privateToken;
+       location.href="./test-install.html#access="+privateToken;
   };
 }
 
@@ -210,7 +217,7 @@ function renderCatalog(){
     return '<button type="button" class="app-card'+(picked?' selected':'')+'" data-select="'+esc(a.slug)+'" aria-pressed="'+picked+'">'+
     '<span class="symbol '+esc(a.slug)+'">'+esc(icons[a.slug]||"•")+'</span>'+
     '<span class="details"><strong>'+esc(a.title)+'</strong><small>'+esc(a.description||"Для iPhone")+'</small>'+
-    '<b>'+(hasPrice?money(price):"Стоимость уточняется")+'</b></span><span class="check">'+(picked?"✓":"+")+'</span></button>';
+    '<b>'+(a.slug==="sber"?"Бесплатная установка":hasPrice?money(price):"Стоимость уточняется")+'</b></span><span class="check">'+(picked?"✓":"+")+'</span></button>';
   }).join(""):'<div class="empty">Каталог временно недоступен. Повторите попытку позже.</div>';
   Array.from(catalogEl.querySelectorAll("[data-select]")).forEach(b=>{
     b.onclick=()=>{
@@ -223,7 +230,10 @@ function renderCatalog(){
   const total=selected.reduce((n,a)=>n+(Number.isInteger(a.price_rub)?a.price_rub:0),0);
   el("count").textContent=selected.length+" "+nouns(selected.length);
   el("selection").textContent=selected.length?selected.map(a=>a.title).join(", "):"Пока ничего не выбрано";
-  el("total").textContent=selected.length?money(total):"0 ₽";
+  const freeEligible=selected.length===1&&selected[0].slug==="sber";
+  el("total").textContent=freeEligible?"0 ₽":selected.length?money(total):"0 ₽";
+  el("free-install").disabled=!freeEligible;
+  el("free-note").textContent=freeEligible?"СберБанк Онлайн: установка без оплаты. На следующем шаге — кнопка для iPhone и инструкция.":selected.length?"Бесплатная установка сейчас доступна только для СберБанк Онлайн. Оставьте выбранным только это приложение.":"Бесплатная установка доступна для СберБанк Онлайн. Выберите его в каталоге.";
   const pay=el("pay");pay.disabled=true;pay.textContent=selected.length?"Оплатить "+money(total):"Выберите приложение";
   el("preview").disabled=selected.length===0;
   el("private-install").disabled=!(privateToken&&selected.length===1&&selected[0].slug==="sber");
@@ -276,6 +286,19 @@ function renderFinish(){
     '<div class="demo-item ready"><strong>'+esc(a.title)+'</strong><span style="color:#228758;font-size:12px;font-weight:700">✓ В демо выполнено</span></div>'
   ).join("");
 }
+el("free-install").onclick=()=>{
+  const selected=chosen();
+  if(selected.length!==1||selected[0].slug!=="sber")return;
+  const url="https://ai-service-apps.github.io/free-install.html?app=sber";
+  if(inTelegram&&typeof tg.openLink==="function"){
+    try{
+      tg.openLink(url,{try_instant_view:false});
+      el("free-note").textContent="Страница установки открывается в браузере. На iPhone используйте Safari. Если переход не произошёл, откройте https://ai-service-apps.github.io/free-install.html?app=sber в Safari.";
+      return;
+    }catch(_){}
+  }
+  location.href=url;
+};
 el("preview").onclick=()=>{
   if(!chosen().length)return;
   simulatedInstalled.clear();
@@ -294,15 +317,31 @@ el("back-shop").onclick=()=>{
   window.scrollTo({top:0,behavior:"smooth"});
 };
 async function load(){
+  let usedBackup=false;
   try{
-    const r=await fetch(api,{cache:"no-store"});
-    if(!r.ok)throw Error("CATALOG_UNAVAILABLE");
+    const r=await fetch(api,{cache:"no-store",signal:AbortSignal.timeout(6500)});
+    if(!r.ok)throw Error("CATALOG_API_UNAVAILABLE");
     const j=await r.json();
-    if(!j.ok||!Array.isArray(j.apps))throw Error("CATALOG_UNAVAILABLE");
+    if(!j.ok||!Array.isArray(j.apps)||j.apps.length===0)throw Error("CATALOG_API_INVALID");
     catalog=j.apps.filter(a=>a.slug!=="other"&&typeof a.slug==="string"&&typeof a.title==="string");
   }catch(_){
-    catalog=[];
-    el("payment-warning").textContent="Не удалось загрузить каталог. Оплата отключена. Повторите попытку позже.";
+    // Netlify deployment may be reachable before its functions are fully live.
+    // This static copy mirrors public database fields only: prices and titles, no IPA links.
+    if(location.hostname.endsWith(".netlify.app")){
+      try{
+        const r=await fetch("/catalog-fallback.json",{cache:"no-store"});
+        if(!r.ok)throw Error("BACKUP_NOT_FOUND");
+        const j=await r.json();
+        if(!j.ok||!Array.isArray(j.apps))throw Error("BACKUP_INVALID");
+        catalog=j.apps.filter(a=>a.slug!=="other"&&typeof a.slug==="string"&&typeof a.title==="string");
+        usedBackup=true;
+      }catch(__){catalog=[]}
+    }else catalog=[];
+  }
+  if(usedBackup){
+    el("payment-warning").textContent="Показан резервный каталог. Оплата отключена. Бесплатная установка СберБанк Онлайн доступна по отдельной инструкции.";
+  }else if(!catalog.length){
+    el("payment-warning").textContent="Не удалось загрузить каталог. Оплата отключена. Попробуйте позже.";
   }
   renderCatalog();
 }
