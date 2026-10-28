@@ -182,7 +182,7 @@ footer a{color:#5371ac;text-decoration:none}
 <p>Установка и инструкция в одном окне. Подготовленный файл: версия 16.13.0. Оплата не требуется.</p>
 <h3>1. Установите приложение</h3>
 <p>Нажмите кнопку ниже и подтвердите установку, если iPhone покажет запрос. Дождитесь появления значка на экране «Домой».</p>
-<a id="mini-install-link" class="primary install-link" href="itms-services://?action=download-manifest&amp;url=https%3A%2F%2Fraw.githubusercontent.com%2Fai-service-apps%2Fapps%2Fmain%2FAppleID1-Karen%2Fonline.plist" rel="noreferrer">Установить на iPhone</a>
+<a id="mini-install-link" class="primary install-link" href="itms-services://?action=download-manifest&amp;url=https%3A%2F%2Fraw.githubusercontent.com%2Fai-service-apps%2Fapps%2Fmain%2FAppleID1-Karen%2Fonline.plist" target="_blank" rel="noopener noreferrer">Установить на iPhone</a>
 <div id="mini-install-state" class="notice" role="status" aria-live="polite">Установка ещё не запускалась.</div>
 <h3>2. Проверьте запуск</h3>
 <p>Откройте приложение на экране «Домой». Если требуется Apple Account, проверьте вашу учётную запись, с которой приложение было получено: «Настройки» → ваше имя → «Контент и покупки». Подтверждение входа выполняется на iPhone.</p>
@@ -320,7 +320,7 @@ el("free-install").onclick=()=>{
   window.scrollTo({top:0,behavior:"smooth"});
 };
 el("mini-install-link").onclick=()=>{
-  el("mini-install-state").textContent="Нажатие передаёт запрос установки iOS. Подтвердите запрос, если он появился. Если реакции нет, используйте кнопку открытия в браузере ниже.";
+  el("mini-install-state").textContent="Запрашиваем открытие установки отдельно от встроенной страницы. Если Telegram покажет подтверждение открытия ссылки, подтвердите его; затем подтвердите установку iOS. Если запрос не появился, установка не подтверждена — используйте открытие в браузере ниже.";
 };
 el("mini-back").onclick=()=>{
   el("free-panel").hidden=true;
