@@ -51,6 +51,9 @@ h2{font-size:22px;letter-spacing:-.6px;margin:0 0 7px}
 .primary,.secondary{border:0;border-radius:12px;padding:14px 18px;font-size:13px;font-weight:800;line-height:1.35}
 .primary{background:var(--blue);color:#fff}
 .primary:disabled{background:#a7b8df;color:#fff;cursor:not-allowed}
+.primary.install-link{display:block;text-align:center;text-decoration:none;margin:16px 0}
+.free-flow[hidden],.free-flow [hidden]{display:none!important}
+.free-flow h3{font-size:17px;margin:24px 0 9px}.free-flow p{font-size:13px;color:#61718d;line-height:1.7}
 .secondary{background:#eef2fb;color:#35569c}
 .notice{padding:14px 16px;border-radius:12px;background:#ebf1fd;color:#516c98;font-size:12px;line-height:1.6;margin-top:16px}
 .notice.warn{background:#fff7e7;color:#906c28}
@@ -97,7 +100,7 @@ footer a{color:#5371ac;text-decoration:none}
 <section class="hero">
 <div class="eyebrow">Приложения на iPhone</div>
 <h1>Выбрать. Установить. Проверить.</h1>
-<p>Попробуйте бесплатно установить СберБанк Онлайн на iPhone. Откройте сайт в Safari и следуйте инструкции. Оплата для этого не требуется.</p>
+<p>Выберите СберБанк Онлайн и откройте установку с инструкцией прямо здесь. Оплата для этого не требуется.</p>
 </section>
 <div class="progress" aria-label="Этапы установки">
 <div class="on"><span>01</span><strong>Выбор</strong></div>
@@ -173,6 +176,25 @@ footer a{color:#5371ac;text-decoration:none}
 <div class="actions"><button class="secondary" type="button" id="back-shop">Вернуться в каталог</button></div>
 </div>
 </div>
+<section id="free-panel" class="order-demo free-flow" hidden aria-labelledby="free-title">
+<span class="label">БЕСПЛАТНО · 0 ₽</span>
+<h2 id="free-title">Установка СберБанк Онлайн</h2>
+<p>Установка и инструкция в одном окне. Подготовленный файл: версия 16.13.0. Оплата не требуется.</p>
+<h3>1. Установите приложение</h3>
+<p>Нажмите кнопку ниже и подтвердите установку, если iPhone покажет запрос. Дождитесь появления значка на экране «Домой».</p>
+<a id="mini-install-link" class="primary install-link" href="itms-services://?action=download-manifest&amp;url=https%3A%2F%2Fraw.githubusercontent.com%2Fai-service-apps%2Fapps%2Fmain%2FAppleID1-Karen%2Fonline.plist" rel="noreferrer">Установить на iPhone</a>
+<div id="mini-install-state" class="notice" role="status" aria-live="polite">Установка ещё не запускалась.</div>
+<h3>2. Проверьте запуск</h3>
+<p>Откройте приложение на экране «Домой». Если требуется Apple Account, проверьте вашу учётную запись, с которой приложение было получено: «Настройки» → ваше имя → «Контент и покупки». Подтверждение входа выполняется на iPhone.</p>
+<p>Сайт не запрашивает пароль и коды подтверждения. Установку и открытие приложения нужно проверить на устройстве.</p>
+<h3>3. Если кнопка не сработала</h3>
+<p>Если Telegram не передал запрос установки iPhone, откройте установку в браузере. На iPhone используйте Safari.</p>
+<div class="actions">
+<button id="mini-browser" class="secondary" type="button">Открыть установку в браузере</button>
+<button id="mini-copy" class="secondary" type="button">Скопировать ссылку</button>
+<button id="mini-back" class="secondary" type="button">← В каталог</button>
+</div>
+</section>
 <footer>
 <span>Apple Inside Service · Анапа, ул. Ленина, 173А, корпус 4<br>Поддержка: <a href="tel:+79384322202">+7 938 432-22-02</a></span>
 <span><a href="terms.html">Условия</a> · <a href="payment.html">Оплата и возвраты</a> · <a href="privacy.html">Персональные данные</a> · <a href="contacts.html">Контакты</a></span>
@@ -192,6 +214,10 @@ const el=id=>document.getElementById(id);
 const tg=window.Telegram&&window.Telegram.WebApp;
 const inTelegram=Boolean(tg&&(tg.initData||(tg.platform&&tg.platform!=="unknown")));
 if(inTelegram){try{tg.ready();tg.expand()}catch(_){}}
+const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const freeInstallPage="https://ai-service-apps.github.io/free-install.html?app=sber";
+el("mini-install-link").hidden=!ios;
+if(!ios)el("mini-install-state").textContent="Установка доступна на iPhone. Откройте мини-приложение на телефоне или скопируйте ссылку ниже.";
 
 let privateToken="";
 try{
@@ -289,15 +315,31 @@ function renderFinish(){
 el("free-install").onclick=()=>{
   const selected=chosen();
   if(selected.length!==1||selected[0].slug!=="sber")return;
-  const url="https://ai-service-apps.github.io/free-install.html?app=sber";
+  el("store").className="store hidden";
+  el("free-panel").hidden=false;
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+el("mini-install-link").onclick=()=>{
+  el("mini-install-state").textContent="Нажатие передаёт запрос установки iOS. Подтвердите запрос, если он появился. Если реакции нет, используйте кнопку открытия в браузере ниже.";
+};
+el("mini-back").onclick=()=>{
+  el("free-panel").hidden=true;
+  el("store").className="store visible";
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+el("mini-browser").onclick=()=>{
   if(inTelegram&&typeof tg.openLink==="function"){
     try{
-      tg.openLink(url,{try_instant_view:false});
-      el("free-note").textContent="Страница установки открывается в браузере. На iPhone используйте Safari. Если переход не произошёл, откройте https://ai-service-apps.github.io/free-install.html?app=sber в Safari.";
+      tg.openLink(freeInstallPage,{try_instant_view:false});
+      el("mini-install-state").textContent="Открываем страницу в браузере. Если переход не произошёл, скопируйте ссылку ниже и откройте её в Safari.";
       return;
     }catch(_){}
   }
-  location.href=url;
+  location.href=freeInstallPage;
+};
+el("mini-copy").onclick=async()=>{
+  try{await navigator.clipboard.writeText(freeInstallPage);el("mini-install-state").textContent="Ссылка скопирована. Откройте её в Safari на iPhone.";}
+  catch(_){el("mini-install-state").textContent="Скопируйте адрес и откройте его в Safari: "+freeInstallPage;}
 };
 el("preview").onclick=()=>{
   if(!chosen().length)return;
